@@ -109,7 +109,8 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
     unfurl_links: false,
     unfurl_media: false,
     username: inputs.issue_id,
-    icon_url: "https://github.com/pcbowers/pr-bot/blob/main/assets/logo.png",
+    icon_url:
+      "https://raw.githubusercontent.com/pcbowers/pr-bot/main/assets/icon.png",
     metadata,
     text: "A new Pull Request is ready for Code Review!",
   });
@@ -129,10 +130,14 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
           undefined,
         claimer: action.action_id === "unclaim"
           ? undefined
+          : action.action_id === "claim"
+          ? body.user.id
           : body.message?.metadata?.event_payload.claimer as string ??
             undefined,
         approver: action.action_id === "unapprove"
           ? undefined
+          : action.action_id === "approve"
+          ? body.user.id
           : body.message?.metadata?.event_payload.approver as string ??
             undefined,
       },
@@ -169,7 +174,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
         },
       };
     }
-    console.log("huh");
+
     return { completed: false };
   },
 ).addBlockActionsHandler(["delete"], async ({ body, client }) => {

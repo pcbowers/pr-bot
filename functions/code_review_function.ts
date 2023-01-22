@@ -109,7 +109,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
     unfurl_links: false,
     unfurl_media: false,
     username: inputs.issue_id,
-    icon_url: "../assets/logo.png",
+    icon_url: "https://github.com/pcbowers/pr-bot/blob/main/assets/logo.png",
     metadata,
     text: "A new Pull Request is ready for Code Review!",
   });
@@ -152,8 +152,6 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
       }),
       metadata,
     });
-
-    console.log(action);
 
     if (!msgResponse.ok) {
       console.log("Error during request chat.update!", msgResponse.error);

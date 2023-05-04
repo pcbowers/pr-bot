@@ -1,6 +1,8 @@
 import { DefineWorkflow, Schema } from "deno-slack-sdk/mod.ts";
 import { CodeReviewFunction } from "../functions/code_review_function.ts";
 
+const ISSUE_URL_PREFIX = "https://jira.os.liberty.edu/browse/";
+
 const CodeReviewWorkflow = DefineWorkflow({
   callback_id: "code_review_workflow",
   title: "Begin a PR Code Review",
@@ -55,13 +57,6 @@ const prForm = CodeReviewWorkflow.addStep(Schema.slack.functions.OpenForm, {
         type: Schema.types.string,
       },
       {
-        name: "issue_url",
-        title: "Issue URL",
-        description: "The URL that navigates to the Issue",
-        type: Schema.types.string,
-        format: "url",
-      },
-      {
         name: "pr_url",
         title: "Pull Request URL",
         description: "The URL that navigates to the Pull Request",
@@ -76,15 +71,8 @@ const prForm = CodeReviewWorkflow.addStep(Schema.slack.functions.OpenForm, {
         type: Schema.types.string,
         long: true,
       },
-      {
-        name: "pr_channel",
-        title: "Channel",
-        description: "The channel to post the Pull Request message to",
-        type: Schema.slack.types.channel_id,
-        default: CodeReviewWorkflow.inputs.channel,
-      },
     ],
-    required: ["issue_id", "issue_url", "pr_url", "priority"],
+    required: ["issue_id", "pr_url", "priority"],
   },
 });
 
@@ -92,10 +80,10 @@ CodeReviewWorkflow.addStep(CodeReviewFunction, {
   interactivity: prForm.outputs.interactivity,
   priority: prForm.outputs.fields.priority,
   issue_id: prForm.outputs.fields.issue_id,
-  issue_url: prForm.outputs.fields.issue_url,
+  issue_url: ISSUE_URL_PREFIX + prForm.outputs.fields.issue_id,
   pr_url: prForm.outputs.fields.pr_url,
   pr_description: prForm.outputs.fields.pr_description,
-  channel: prForm.outputs.fields.pr_channel,
+  channel: CodeReviewWorkflow.inputs.channel,
 });
 
 export default CodeReviewWorkflow;

@@ -1,6 +1,6 @@
-# Blank Template
+# PR Bot
 
-This is a blank template used to build out automations using the Slack CLI.
+This is a PR Bot that helps walk through managing PR's in Slack channels.
 
 **Guide Outline**:
 

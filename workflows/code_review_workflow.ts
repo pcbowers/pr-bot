@@ -76,14 +76,13 @@ const prForm = CodeReviewWorkflow.addStep(Schema.slack.functions.OpenForm, {
         type: Schema.types.string,
         long: true,
       },
-      // TODO: Add support for Slack Channel ID once private channels are supported
-      // {
-      //   name: "pr_channel",
-      //   title: "Channel",
-      //   description: "The channel to post the Pull Request message to",
-      //   type: Schema.slack.types.channel_id,
-      //   default: CodeReviewWorkflow.inputs.channel,
-      // },
+      {
+        name: "pr_channel",
+        title: "Channel",
+        description: "The channel to post the Pull Request message to",
+        type: Schema.slack.types.channel_id,
+        default: CodeReviewWorkflow.inputs.channel,
+      },
     ],
     required: ["issue_id", "issue_url", "pr_url", "priority"],
   },
@@ -96,9 +95,7 @@ CodeReviewWorkflow.addStep(CodeReviewFunction, {
   issue_url: prForm.outputs.fields.issue_url,
   pr_url: prForm.outputs.fields.pr_url,
   pr_description: prForm.outputs.fields.pr_description,
-  // TODO: Add support for Slack Channel ID once private channels are supported
-  // channel: prForm.outputs.fields.pr_channel,
-  channel: "D04AMPYEPPB"
+  channel: prForm.outputs.fields.pr_channel,
 });
 
 export default CodeReviewWorkflow;

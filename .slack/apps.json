@@ -1,1 +1,11 @@
-{}
+{
+  "apps": {
+    "lu-is": {
+      "name": "lu-is",
+      "app_id": "A056N8W2SQH",
+      "team_id": "T0WD2MTAR",
+      "IsDev": false
+    }
+  },
+  "default": "lu-is"
+}

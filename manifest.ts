@@ -1,7 +1,7 @@
 import { Manifest } from "deno-slack-sdk/mod.ts";
+import CodeReviewEvent from "./event_types/code_review_event.ts";
 import { CodeReviewFunction } from "./functions/code_review_function.ts";
 import CodeReviewWorkflow from "./workflows/code_review_workflow.ts";
-import CodeReviewEvent from "./event_types/code_review_event.ts";
 
 /**
  * The app manifest contains the app's configuration. This

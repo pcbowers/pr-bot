@@ -62,13 +62,18 @@ export default function createMessage(state: State) {
           {
             type: 'divider'
           },
-          {
-            type: 'section',
-            text: {
-              type: 'mrkdwn',
-              text: state.event_payload.pr_description
-            }
-          }
+          // TODO: Once old PRs are cleaned up, only use the string version
+          ...(typeof state.event_payload.pr_description === 'string'
+            ? [
+                {
+                  type: 'section',
+                  text: {
+                    type: 'mrkdwn',
+                    text: state.event_payload.pr_description
+                  }
+                }
+              ]
+            : (state.event_payload.pr_description as unknown as any[]))
         ]
       : []),
     ...logs,

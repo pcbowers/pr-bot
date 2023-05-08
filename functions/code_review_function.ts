@@ -207,7 +207,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
         },
         submit: {
           type: 'plain_text',
-          text: 'Edit Code Review',
+          text: 'Finish Editing',
           emoji: true
         },
         close: {
@@ -268,7 +268,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
             elements: [
               {
                 type: 'plain_text',
-                text: 'The urgency of your pull request that dictates its priority when deciding which Pull Request should be reviewed.',
+                text: 'The urgency of your Pull Request, helps indicate time sensitivity.',
                 emoji: true
               }
             ]
@@ -292,7 +292,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
             elements: [
               {
                 type: 'plain_text',
-                text: 'The ID of the issue (i.e. CCS-2425).',
+                text: 'The ID of the Issue (i.e. CCS-2425).',
                 emoji: true
               }
             ]
@@ -347,7 +347,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
             elements: [
               {
                 type: 'plain_text',
-                text: 'An optional description that will be posted along with your Pull Request.',
+                text: 'A description that will be posted with your Pull Request. Supports Slack Markdown.',
                 emoji: true
               }
             ]

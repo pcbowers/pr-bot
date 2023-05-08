@@ -5,7 +5,7 @@ const CodeReviewWorkflow = DefineWorkflow({
   callback_id: 'code_review_workflow',
   title: 'Begin a PR Code Review',
   description:
-    'Input the details of your Pull Request and post a message to notify and begin a Pull Request Code Review.',
+    'Input the details of your Pull Request to post a message to your current channel and begin a Pull Request Code Review.',
   input_parameters: {
     properties: {
       interactivity: {
@@ -29,7 +29,7 @@ const prForm = CodeReviewWorkflow.addStep(Schema.slack.functions.OpenForm, {
         name: 'priority',
         title: 'Priority',
         description:
-          'The urgency of your pull request that dictates its priority when deciding which Pull Request should be reviewed.',
+          'The urgency of your Pull Request, helps indicate time sensitivity.',
         type: Schema.types.string,
         enum: ['low', 'medium', 'high'],
         choices: [
@@ -51,7 +51,7 @@ const prForm = CodeReviewWorkflow.addStep(Schema.slack.functions.OpenForm, {
       {
         name: 'issue_id',
         title: 'Issue ID',
-        description: 'The ID of the issue (i.e. CCS-2425)',
+        description: 'The ID of the Issue (i.e. CCS-2425)',
         type: Schema.types.string
       },
       {
@@ -65,7 +65,7 @@ const prForm = CodeReviewWorkflow.addStep(Schema.slack.functions.OpenForm, {
         name: 'pr_description',
         title: 'Pull Request Description',
         description:
-          'An optional description that will be posted along with your Pull Request',
+          'A description that will be posted with your Pull Request. Supports Slack Markdown.',
         type: Schema.types.string,
         long: true
       }

@@ -1,6 +1,7 @@
 import { DefineFunction, Schema, SlackFunction } from 'deno-slack-sdk/mod.ts'
 import CodeReviewEvent from '../event_types/code_review_event.ts'
 import createMessage, { getPriority } from './create_message.ts'
+import notifyReactionUsers from './notify_reaction.ts'
 
 export const CodeReviewFunction = DefineFunction({
   callback_id: 'code_review_function',
@@ -69,6 +70,9 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
 
   return { completed: false }
 })
+  .addBlockActionsHandler(['view_code_review_thread'], () => {
+    return { completed: false }
+  })
   .addBlockActionsHandler(
     ['claim', 'unclaim', 'approve', 'unapprove', 'complete'],
     async ({ action, inputs, body, client }) => {
@@ -120,6 +124,15 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
       if (!msgResponse.ok) {
         console.log('Error during request chat.update!', msgResponse)
       }
+
+      notifyReactionUsers(
+        client,
+        body.container.channel_id,
+        body.container.message_ts,
+        body.user.id,
+        action.action_id,
+        metadata.event_payload
+      )
 
       if (action.action_id === 'complete') {
         return await client.functions.completeSuccess({
@@ -397,6 +410,15 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
     if (!msgResponse.ok) {
       console.log('Error during request chat.update!', msgResponse)
     }
+
+    notifyReactionUsers(
+      client,
+      private_metadata.channel_id,
+      private_metadata.message_ts,
+      body.user.id,
+      'edit',
+      metadata.event_payload
+    )
   })
 
 function isValidHttpUrl(potentialUrl: string) {

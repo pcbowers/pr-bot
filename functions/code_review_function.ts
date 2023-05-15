@@ -102,11 +102,6 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
         }
       }
 
-      // TODO: Once old PRs are cleaned up, only use the string version
-      if (typeof metadata.event_payload.pr_description !== 'string') {
-        metadata.event_payload.pr_description = undefined
-      }
-
       const msgResponse = await client.chat.update({
         channel: body.container.channel_id,
         ts: body.container.message_ts,

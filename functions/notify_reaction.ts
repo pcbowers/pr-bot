@@ -55,73 +55,68 @@ export default async function notifyReactionUsers(
     currentUserId
   )
 
-  return (
-    [
-      ...new Set(
-        (message.reactions || []).map((reaction) => reaction.users).flat()
-      )
-    ]
-      // .filter((userId) => userId !== currentUserId)
-      .forEach(async (userId) => {
-        const postNotification = await client.chat.postMessage({
-          channel: userId,
-          unfurl_links: false,
-          unfurl_media: false,
-          blocks: [
-            {
-              type: 'header',
-              text: {
-                type: 'plain_text',
-                text: `${icon} Updated Pull Request for ${event_payload.issue_id} ${icon}`
-              }
-            },
-            {
-              type: 'context',
-              elements: [
-                {
-                  type: 'mrkdwn',
-                  text: `*${priority}*  | <${event_payload.pr_url}|See Pull Request> or <${issueUrlPrefix}${event_payload.issue_id}|See Issue>`
-                }
-              ]
-            },
-            {
-              type: 'divider'
-            },
-            {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: notificationMessage
-              }
-            },
-            {
-              type: 'actions',
-              elements: [
-                {
-                  type: 'button',
-                  text: {
-                    type: 'plain_text',
-                    emoji: true,
-                    text: 'View Code Review Thread'
-                  },
-                  action_id: 'view_code_review_thread',
-                  style: 'primary',
-                  url: message.permalink
-                }
-              ]
+  return [
+    ...new Set(
+      (message.reactions || []).map((reaction) => reaction.users).flat()
+    )
+  ]
+    .filter((userId) => userId !== currentUserId)
+    .forEach(async (userId) => {
+      const postNotification = await client.chat.postMessage({
+        channel: userId,
+        unfurl_links: false,
+        unfurl_media: false,
+        blocks: [
+          {
+            type: 'header',
+            text: {
+              type: 'plain_text',
+              text: `${icon} Updated Pull Request for ${event_payload.issue_id} ${icon}`
             }
-          ],
-          text: notificationMessage
-        })
-
-        if (!postNotification.ok) {
-          console.log(
-            'Error during request chat.postMessage!',
-            postNotification
-          )
-        }
+          },
+          {
+            type: 'context',
+            elements: [
+              {
+                type: 'mrkdwn',
+                text: `*${priority}*  | <${event_payload.pr_url}|See Pull Request> or <${issueUrlPrefix}${event_payload.issue_id}|See Issue>`
+              }
+            ]
+          },
+          {
+            type: 'divider'
+          },
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: notificationMessage
+            }
+          },
+          {
+            type: 'actions',
+            elements: [
+              {
+                type: 'button',
+                text: {
+                  type: 'plain_text',
+                  emoji: true,
+                  text: 'View Code Review Thread'
+                },
+                action_id: 'view_code_review_thread',
+                style: 'primary',
+                url: message.permalink
+              }
+            ]
+          }
+        ],
+        text: notificationMessage
       })
-  )
+
+      if (!postNotification.ok) {
+        console.log('Error during request chat.postMessage!', postNotification)
+      }
+    })
 }
 
 function getIcon(action_id: string) {

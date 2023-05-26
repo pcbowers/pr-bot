@@ -10,6 +10,7 @@ const CodeReviewEvent = DefineEvent({
     author: { type: Schema.slack.types.user_id },
     claimer: { type: Schema.slack.types.user_id },
     approver: { type: Schema.slack.types.user_id },
+    decliner: { type: Schema.slack.types.user_id },
     priority: { type: Schema.types.string },
     issue_id: { type: Schema.types.string },
     pr_url: { type: Schema.types.string },

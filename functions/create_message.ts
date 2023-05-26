@@ -7,7 +7,7 @@ type EventPayload = Partial<{
 }>
 
 type State = {
-  type: 'authored' | 'claimed' | 'approved'
+  type: 'authored' | 'claimed' | 'approved' | 'declined'
   event_payload: EventPayload
   complete: boolean
 }
@@ -97,6 +97,7 @@ function getIcon(state: State) {
   if (state.type === 'authored') return ':tada:'
   if (state.type === 'claimed') return ':eyes:'
   if (state.type === 'approved') return ':white_check_mark:'
+  if (state.type === 'declined') return ':no_entry_sign:'
   return ':tada:'
 }
 
@@ -109,6 +110,10 @@ function getLogs(state: State) {
 
   if (state.event_payload.approver) {
     text.push(`_Approved By: *<@${state.event_payload.approver}>*_`)
+  }
+
+  if (state.event_payload.decliner) {
+    text.push(`_Declined By: *<@${state.event_payload.decliner}>*_`)
   }
 
   return [
@@ -163,47 +168,62 @@ function createButton(
   }
 }
 
+function createOverflow() {
+  return {
+    type: 'overflow',
+    options: [
+      {
+        text: {
+          type: 'plain_text',
+          text: 'Edit'
+        },
+        value: 'edit'
+      },
+      {
+        text: {
+          type: 'plain_text',
+          text: 'Complete'
+        },
+        value: 'complete'
+      },
+      {
+        text: {
+          type: 'plain_text',
+          text: 'Delete'
+        },
+        value: 'delete'
+      }
+    ],
+    confirm: {
+      title: {
+        type: 'plain_text',
+        text: 'Are you sure?'
+      },
+      text: {
+        type: 'mrkdwn',
+        text: 'Are you sure you want to Edit/Complete/Delete this PR Code Review? Completing or Deleting this PR Code Review is permanent.'
+      },
+      confirm: {
+        type: 'plain_text',
+        text: "Yes, I'm Sure"
+      },
+      deny: {
+        type: 'plain_text',
+        text: 'No, Take Me Back'
+      }
+    },
+    action_id: 'overflow'
+  }
+}
+
 function getButtons(state: State) {
   if (state.complete) return []
 
-  const baseButtons = [
-    createButton(
-      {
-        title: 'Complete',
-        action_id: 'complete',
-        style: state.event_payload.approver ? 'primary' : undefined
-      },
-      {
-        title: 'Are you sure?',
-        text: 'By marking this as complete, you will no longer be able to change the claim/approval status and make other edits. Are you sure you want to do this?',
-        deny: "Stop, I've changed my mind!",
-        confirm: 'Do it'
-      }
-    ),
-    createButton({
-      title: 'Edit',
-      action_id: 'edit',
-      style: 'primary'
-    }),
-    createButton(
-      {
-        title: 'Delete',
-        action_id: 'delete',
-        style: 'danger'
-      },
-      {
-        title: 'Are you sure?',
-        text: 'Once deleted, you will not be able to recover this message. Are you sure you want to do this?',
-        deny: "Stop, I've changed my mind!",
-        confirm: 'Do it'
-      }
-    )
-  ]
+  const baseButtons = [createOverflow()]
 
   if (state.type === 'authored') {
     return [
       createButton({ title: 'Claim', action_id: 'claim', style: 'primary' }),
-      createButton({ title: 'Approve', action_id: 'approve' }),
       ...baseButtons
     ]
   }
@@ -216,22 +236,25 @@ function getButtons(state: State) {
         action_id: 'approve',
         style: 'primary'
       }),
+      createButton({
+        title: 'Decline',
+        action_id: 'decline',
+        style: 'danger'
+      }),
       ...baseButtons
     ]
   }
 
-  if (state.type === 'approved' && !state.event_payload.claimer) {
+  if (state.type === 'approved') {
     return [
-      createButton({ title: 'Claim', action_id: 'claim' }),
       createButton({ title: 'Remove Approval', action_id: 'unapprove' }),
       ...baseButtons
     ]
   }
 
-  if (state.type === 'approved' && state.event_payload.claimer) {
+  if (state.type === 'declined') {
     return [
-      createButton({ title: 'Remove Claim', action_id: 'unclaim' }),
-      createButton({ title: 'Remove Approval', action_id: 'unapprove' }),
+      createButton({ title: 'Re-Open', action_id: 'undecline' }),
       ...baseButtons
     ]
   }

@@ -1,3 +1,6 @@
+import { BlockActionsBody } from 'deno-slack-sdk/functions/interactivity/block_actions_types.ts'
+import { BlockAction } from 'deno-slack-sdk/functions/interactivity/block_kit_types.ts'
+import { FunctionRuntimeParameters } from 'deno-slack-sdk/functions/types.ts'
 import { DefineFunction, Schema, SlackFunction } from 'deno-slack-sdk/mod.ts'
 import CodeReviewEvent from '../event_types/code_review_event.ts'
 import createMessage, { getPriority } from './create_message.ts'
@@ -26,12 +29,13 @@ export const CodeReviewFunction = DefineFunction({
       author: { type: Schema.slack.types.user_id },
       claimer: { type: Schema.slack.types.user_id },
       approver: { type: Schema.slack.types.user_id },
+      decliner: { type: Schema.slack.types.user_id },
       priority: { type: Schema.types.string },
       issue_id: { type: Schema.types.string },
       pr_url: { type: Schema.types.string },
       pr_description: { type: Schema.types.string }
     },
-    required: ['author', 'channel_id', 'priority', 'issue_id', 'pr_url']
+    required: ['type', 'author', 'channel_id', 'priority', 'issue_id', 'pr_url']
   }
 })
 
@@ -74,26 +78,99 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
     return { completed: false }
   })
   .addBlockActionsHandler(
-    ['claim', 'unclaim', 'approve', 'unapprove', 'complete'],
+    ['claim', 'unclaim', 'approve', 'unapprove', 'decline', 'undecline'],
     async ({ action, inputs, body, client }) => {
-      const metadata = {
-        event_type: CodeReviewEvent,
-        event_payload: {
-          channel_id: body.container.channel_id ?? inputs.channel,
-          message_ts: body.container.message_ts,
-          author: body.message?.metadata?.event_payload?.author,
-          claimer:
-            action.action_id === 'unclaim'
-              ? undefined
-              : action.action_id === 'claim'
-              ? body.user.id
-              : body.message?.metadata?.event_payload?.claimer,
-          approver:
-            action.action_id === 'unapprove'
-              ? undefined
-              : action.action_id === 'approve'
-              ? body.user.id
-              : body.message?.metadata?.event_payload?.approver,
+      const metadata = createMetadata(action, body, inputs)
+
+      const msgResponse = await client.chat.update({
+        channel: body.container.channel_id,
+        ts: body.container.message_ts,
+        blocks: createMessage({
+          type: metadata.event_payload.approver
+            ? 'approved'
+            : metadata.event_payload.decliner
+            ? 'declined'
+            : metadata.event_payload.claimer
+            ? 'claimed'
+            : 'authored',
+          event_payload: metadata.event_payload,
+          complete: false
+        }),
+        metadata
+      })
+
+      if (!msgResponse.ok) {
+        console.log('Error during request chat.update!', msgResponse)
+      } else {
+        notifyReactionUsers(
+          client,
+          body.container.channel_id,
+          body.container.message_ts,
+          body.user.id,
+          action.action_id,
+          metadata.event_payload
+        )
+      }
+
+      return { completed: false }
+    }
+  )
+  .addBlockActionsHandler(
+    ['overflow', 'complete', 'delete', 'edit'],
+    async ({ action, body, client, inputs }) => {
+      const metadata = createMetadata(action, body, inputs)
+
+      if (
+        action.action_id === 'complete' ||
+        action?.selected_option?.value === 'complete'
+      ) {
+        const msgResponse = await client.chat.update({
+          channel: body.container.channel_id,
+          ts: body.container.message_ts,
+          blocks: createMessage({
+            type: metadata.event_payload.approver
+              ? 'approved'
+              : metadata.event_payload.decliner
+              ? 'declined'
+              : metadata.event_payload.claimer
+              ? 'claimed'
+              : 'authored',
+            event_payload: metadata.event_payload,
+            complete: true
+          }),
+          metadata
+        })
+
+        if (!msgResponse.ok) {
+          console.log('Error during request chat.update!', msgResponse)
+        } else {
+          return {
+            completed: true,
+            outputs: { type: 'complete', ...metadata.event_payload }
+          }
+        }
+      } else if (
+        action.action_id === 'delete' ||
+        action?.selected_option?.value === 'delete'
+      ) {
+        const msgResponse = await client.chat.delete({
+          channel: body.container.channel_id,
+          ts: body.container.message_ts
+        })
+
+        if (!msgResponse.ok) {
+          console.log('Error during request chat.delete!', msgResponse)
+        } else {
+          return {
+            completed: true,
+            outputs: { type: 'delete', ...metadata.event_payload }
+          }
+        }
+      } else if (
+        action.action_id === 'edit' ||
+        action?.selected_option?.value === 'edit'
+      ) {
+        const currentInputs = {
           priority:
             body.message?.metadata?.event_payload?.priority ?? inputs.priority,
           issue_id:
@@ -104,272 +181,184 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
             body.message?.metadata?.event_payload?.pr_description ??
             inputs.pr_description
         }
-      }
 
-      const msgResponse = await client.chat.update({
-        channel: body.container.channel_id,
-        ts: body.container.message_ts,
-        blocks: createMessage({
-          type: metadata.event_payload.approver
-            ? 'approved'
-            : metadata.event_payload.claimer
-            ? 'claimed'
-            : 'authored',
-          event_payload: metadata.event_payload,
-          complete: action.action_id === 'complete' ? true : false
-        }),
-        metadata
-      })
-
-      if (!msgResponse.ok) {
-        console.log('Error during request chat.update!', msgResponse)
-      }
-
-      notifyReactionUsers(
-        client,
-        body.container.channel_id,
-        body.container.message_ts,
-        body.user.id,
-        action.action_id,
-        metadata.event_payload
-      )
-
-      if (action.action_id === 'complete') {
-        return await client.functions.completeSuccess({
-          function_execution_id: body.container.function_execution_id,
-          outputs: {
-            type: 'complete',
-            channel_id: body.container.channel_id,
-            message_ts: body.container.message_ts,
-            author: body.message?.metadata?.event_payload?.author,
-            claimer: body.message?.metadata?.event_payload?.claimer,
-            approver: body.message?.metadata?.event_payload?.approver,
-            priority: metadata.event_payload.priority,
-            issue_id: metadata.event_payload.issue_id,
-            pr_url: metadata.event_payload.pr_url,
-            pr_description: metadata.event_payload.pr_description
+        const viewResponse = await client.views.open({
+          trigger_id: body.interactivity.interactivity_pointer,
+          view: {
+            type: 'modal',
+            callback_id: 'edit_modal',
+            private_metadata: JSON.stringify({
+              channel_id: body.container.channel_id,
+              message_ts: body.container.message_ts,
+              author: body.message?.metadata?.event_payload?.author,
+              claimer: body.message?.metadata?.event_payload?.claimer,
+              approver: body.message?.metadata?.event_payload?.approver,
+              decliner: body.message?.metadata?.event_payload?.decliner
+            }),
+            title: {
+              type: 'plain_text',
+              text: 'Edit Pull Request',
+              emoji: true
+            },
+            submit: {
+              type: 'plain_text',
+              text: 'Finish Editing',
+              emoji: true
+            },
+            close: {
+              type: 'plain_text',
+              text: 'Cancel',
+              emoji: true
+            },
+            blocks: [
+              {
+                type: 'input',
+                block_id: 'priority_section',
+                element: {
+                  type: 'static_select',
+                  options: [
+                    {
+                      text: {
+                        type: 'plain_text',
+                        text: '⚪️ Low Priority (Not Urgent)',
+                        emoji: true
+                      },
+                      value: 'low'
+                    },
+                    {
+                      text: {
+                        type: 'plain_text',
+                        text: '🔵 Medium Priority (Timely)',
+                        emoji: true
+                      },
+                      value: 'medium'
+                    },
+                    {
+                      text: {
+                        type: 'plain_text',
+                        text: '🔴 High Priority (Urgent)',
+                        emoji: true
+                      },
+                      value: 'high'
+                    }
+                  ],
+                  action_id: 'priority',
+                  initial_option: {
+                    text: {
+                      type: 'plain_text',
+                      text: getPriority(currentInputs.priority),
+                      emoji: true
+                    },
+                    value: currentInputs.priority
+                  }
+                },
+                label: {
+                  type: 'plain_text',
+                  text: 'Priority',
+                  emoji: true
+                }
+              },
+              {
+                type: 'context',
+                elements: [
+                  {
+                    type: 'plain_text',
+                    text: 'The urgency of your Pull Request, helps indicate time sensitivity.',
+                    emoji: true
+                  }
+                ]
+              },
+              {
+                type: 'input',
+                block_id: 'issue_id_section',
+                element: {
+                  type: 'plain_text_input',
+                  action_id: 'issue_id',
+                  initial_value: currentInputs.issue_id
+                },
+                label: {
+                  type: 'plain_text',
+                  text: 'Issue ID',
+                  emoji: true
+                }
+              },
+              {
+                type: 'context',
+                elements: [
+                  {
+                    type: 'plain_text',
+                    text: 'The ID of the Issue (i.e. CCS-2425).',
+                    emoji: true
+                  }
+                ]
+              },
+              {
+                type: 'input',
+                block_id: 'pr_url_section',
+                element: {
+                  type: 'url_text_input',
+                  action_id: 'pr_url',
+                  ...(isValidHttpUrl(currentInputs.pr_url)
+                    ? { initial_value: currentInputs.pr_url }
+                    : {})
+                },
+                label: {
+                  type: 'plain_text',
+                  text: 'Pull Request URL',
+                  emoji: true
+                }
+              },
+              {
+                type: 'context',
+                elements: [
+                  {
+                    type: 'plain_text',
+                    text: 'The URL that navigates to the Pull Request.',
+                    emoji: true
+                  }
+                ]
+              },
+              {
+                type: 'input',
+                block_id: 'pr_description_section',
+                optional: true,
+                element: {
+                  type: 'plain_text_input',
+                  multiline: true,
+                  action_id: 'pr_description',
+                  ...(currentInputs.pr_description &&
+                  currentInputs.pr_description !== '!undefined!'
+                    ? { initial_value: currentInputs.pr_description }
+                    : {})
+                },
+                label: {
+                  type: 'plain_text',
+                  text: 'Pull Request Description',
+                  emoji: true
+                }
+              },
+              {
+                type: 'context',
+                elements: [
+                  {
+                    type: 'plain_text',
+                    text: 'A description that will be posted with your Pull Request. Supports Slack Markdown.',
+                    emoji: true
+                  }
+                ]
+              }
+            ]
           }
         })
+
+        if (!viewResponse.ok) {
+          console.log('Error during request views.open!', viewResponse)
+        }
       }
 
       return { completed: false }
     }
   )
-  .addBlockActionsHandler(['delete'], async ({ body, client, inputs }) => {
-    const msgResponse = await client.chat.delete({
-      channel: body.container.channel_id,
-      ts: body.container.message_ts
-    })
-
-    if (!msgResponse.ok) {
-      console.log('Error during request chat.delete!', msgResponse)
-    }
-
-    return await client.functions.completeSuccess({
-      function_execution_id: body.container.function_execution_id,
-      outputs: {
-        type: 'delete',
-        channel_id: body.container.channel_id,
-        author: body.message?.metadata?.event_payload?.author,
-        claimer: body.message?.metadata?.event_payload?.claimer,
-        approver: body.message?.metadata?.event_payload?.approver,
-        priority:
-          body.message?.metadata?.event_payload?.priority ?? inputs.priority,
-        issue_id:
-          body.message?.metadata?.event_payload?.issue_id ?? inputs.issue_id,
-        pr_url: body.message?.metadata?.event_payload?.pr_url ?? inputs.pr_url,
-        pr_description:
-          body.message?.metadata?.event_payload?.pr_description ??
-          inputs.pr_description
-      }
-    })
-  })
-  .addBlockActionsHandler(['edit'], async ({ body, client, inputs }) => {
-    const currentInputs = {
-      priority:
-        body.message?.metadata?.event_payload?.priority ?? inputs.priority,
-      issue_id:
-        body.message?.metadata?.event_payload?.issue_id ?? inputs.issue_id,
-      pr_url: body.message?.metadata?.event_payload?.pr_url ?? inputs.pr_url,
-      pr_description:
-        body.message?.metadata?.event_payload?.pr_description ??
-        inputs.pr_description
-    }
-
-    const viewResponse = await client.views.open({
-      trigger_id: body.interactivity.interactivity_pointer,
-      view: {
-        type: 'modal',
-        callback_id: 'edit_modal',
-        private_metadata: JSON.stringify({
-          channel_id: body.container.channel_id,
-          message_ts: body.container.message_ts,
-          author: body.message?.metadata?.event_payload?.author,
-          claimer: body.message?.metadata?.event_payload?.claimer,
-          approver: body.message?.metadata?.event_payload?.approver
-        }),
-        title: {
-          type: 'plain_text',
-          text: 'Edit Pull Request',
-          emoji: true
-        },
-        submit: {
-          type: 'plain_text',
-          text: 'Finish Editing',
-          emoji: true
-        },
-        close: {
-          type: 'plain_text',
-          text: 'Cancel',
-          emoji: true
-        },
-        blocks: [
-          {
-            type: 'input',
-            block_id: 'priority_section',
-            element: {
-              type: 'static_select',
-              options: [
-                {
-                  text: {
-                    type: 'plain_text',
-                    text: '⚪️ Low Priority (Not Urgent)',
-                    emoji: true
-                  },
-                  value: 'low'
-                },
-                {
-                  text: {
-                    type: 'plain_text',
-                    text: '🔵 Medium Priority (Timely)',
-                    emoji: true
-                  },
-                  value: 'medium'
-                },
-                {
-                  text: {
-                    type: 'plain_text',
-                    text: '🔴 High Priority (Urgent)',
-                    emoji: true
-                  },
-                  value: 'high'
-                }
-              ],
-              action_id: 'priority',
-              initial_option: {
-                text: {
-                  type: 'plain_text',
-                  text: getPriority(currentInputs.priority),
-                  emoji: true
-                },
-                value: currentInputs.priority
-              }
-            },
-            label: {
-              type: 'plain_text',
-              text: 'Priority',
-              emoji: true
-            }
-          },
-          {
-            type: 'context',
-            elements: [
-              {
-                type: 'plain_text',
-                text: 'The urgency of your Pull Request, helps indicate time sensitivity.',
-                emoji: true
-              }
-            ]
-          },
-          {
-            type: 'input',
-            block_id: 'issue_id_section',
-            element: {
-              type: 'plain_text_input',
-              action_id: 'issue_id',
-              initial_value: currentInputs.issue_id
-            },
-            label: {
-              type: 'plain_text',
-              text: 'Issue ID',
-              emoji: true
-            }
-          },
-          {
-            type: 'context',
-            elements: [
-              {
-                type: 'plain_text',
-                text: 'The ID of the Issue (i.e. CCS-2425).',
-                emoji: true
-              }
-            ]
-          },
-          {
-            type: 'input',
-            block_id: 'pr_url_section',
-            element: {
-              type: 'url_text_input',
-              action_id: 'pr_url',
-              ...(isValidHttpUrl(currentInputs.pr_url)
-                ? { initial_value: currentInputs.pr_url }
-                : {})
-            },
-            label: {
-              type: 'plain_text',
-              text: 'Pull Request URL',
-              emoji: true
-            }
-          },
-          {
-            type: 'context',
-            elements: [
-              {
-                type: 'plain_text',
-                text: 'The URL that navigates to the Pull Request.',
-                emoji: true
-              }
-            ]
-          },
-          {
-            type: 'input',
-            block_id: 'pr_description_section',
-            optional: true,
-            element: {
-              type: 'plain_text_input',
-              multiline: true,
-              action_id: 'pr_description',
-              ...(currentInputs.pr_description &&
-              currentInputs.pr_description !== '!undefined!'
-                ? { initial_value: currentInputs.pr_description }
-                : {})
-            },
-            label: {
-              type: 'plain_text',
-              text: 'Pull Request Description',
-              emoji: true
-            }
-          },
-          {
-            type: 'context',
-            elements: [
-              {
-                type: 'plain_text',
-                text: 'A description that will be posted with your Pull Request. Supports Slack Markdown.',
-                emoji: true
-              }
-            ]
-          }
-        ]
-      }
-    })
-
-    if (!viewResponse.ok) {
-      console.log('Error during request views.open!', viewResponse)
-    }
-
-    return { completed: false }
-  })
   .addViewSubmissionHandler('edit_modal', async ({ body, inputs, client }) => {
     const private_metadata = JSON.parse(body.view.private_metadata || '{}')
     const metadata = {
@@ -380,6 +369,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
         author: private_metadata.author,
         claimer: private_metadata.claimer,
         approver: private_metadata.approver,
+        decliner: private_metadata.decliner,
         priority:
           body.view.state.values.priority_section.priority.selected_option
             .value,
@@ -398,6 +388,8 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
       blocks: createMessage({
         type: metadata.event_payload.approver
           ? 'approved'
+          : metadata.event_payload.decliner
+          ? 'declined'
           : metadata.event_payload.claimer
           ? 'claimed'
           : 'authored',
@@ -427,5 +419,53 @@ function isValidHttpUrl(potentialUrl: string) {
     return url.protocol === 'http:' || url.protocol === 'https:'
   } catch (_error) {
     return false
+  }
+}
+
+function createMetadata(
+  action: BlockAction,
+  body: BlockActionsBody,
+  inputs: FunctionRuntimeParameters<
+    NonNullable<
+      typeof CodeReviewFunction.definition.input_parameters
+    >['properties'],
+    NonNullable<
+      typeof CodeReviewFunction.definition.input_parameters
+    >['required']
+  >
+) {
+  return {
+    event_type: CodeReviewEvent,
+    event_payload: {
+      channel_id: body.container.channel_id ?? inputs.channel,
+      message_ts: body.container.message_ts,
+      author: body.message?.metadata?.event_payload?.author,
+      claimer:
+        action.action_id === 'unclaim'
+          ? undefined
+          : action.action_id === 'claim'
+          ? body.user.id
+          : body.message?.metadata?.event_payload?.claimer,
+      approver:
+        action.action_id === 'unapprove'
+          ? undefined
+          : action.action_id === 'approve'
+          ? body.user.id
+          : body.message?.metadata?.event_payload?.approver,
+      decliner:
+        action.action_id === 'undecline'
+          ? undefined
+          : action.action_id === 'decline'
+          ? body.user.id
+          : body.message?.metadata?.event_payload?.decliner,
+      priority:
+        body.message?.metadata?.event_payload?.priority ?? inputs.priority,
+      issue_id:
+        body.message?.metadata?.event_payload?.issue_id ?? inputs.issue_id,
+      pr_url: body.message?.metadata?.event_payload?.pr_url ?? inputs.pr_url,
+      pr_description:
+        body.message?.metadata?.event_payload?.pr_description ??
+        inputs.pr_description
+    }
   }
 }

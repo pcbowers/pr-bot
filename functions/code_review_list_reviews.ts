@@ -63,13 +63,20 @@ export async function listReviews(client: SlackAPIClient, userId: string, channe
         ? [{ type: 'section', text: { type: 'plain_text', text: 'Look at you go! :thumbsup:' } }]
         : [])
     ],
-    text: `There are currently ${incompleteReviews.length} Incomplete PR Code Review${
-      incompleteReviews.length === 1 ? '' : 's'
-    }${channelName ? ` in \`#${channelName}\`` : ''}`
+    text: `There ${incompleteReviews.length === 1 ? 'is' : 'are'} currently ${
+      incompleteReviews.length
+    } Incomplete PR Code Review${incompleteReviews.length === 1 ? '' : 's'}${
+      channelName ? ` in \`#${channelName}\`` : ''
+    }`
   })
 
   if (!postIncompleteReviews.ok) {
     console.log('Error during request chat.postMessage!', postIncompleteReviews)
+  }
+
+  return {
+    count: incompleteReviews.length,
+    reviews: incompleteReviews.map((botMessage) => botMessage.ts)
   }
 }
 
@@ -127,7 +134,7 @@ async function getCodeReviews(client: SlackAPIClient, channel: string, oldestTim
       cursor = msgSearch?.response_metadata?.next_cursor
     } else {
       cursor = undefined
-      await updateOldestReview(client, channel, newBotMessages[newBotMessages.length - 1].ts)
+      if (botMessages.length) await updateOldestReview(client, channel, botMessages[botMessages.length - 1].ts)
     }
   } while (cursor !== undefined)
 

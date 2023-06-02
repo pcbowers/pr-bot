@@ -1,7 +1,7 @@
 import { DefineWorkflow, Schema } from 'deno-slack-sdk/mod.ts'
 import { CodeReviewFunction } from '../functions/code_review_function.ts'
 
-const CodeReviewWorkflow = DefineWorkflow({
+export const CodeReviewWorkflow = DefineWorkflow({
   callback_id: 'code_review_workflow',
   title: 'Begin a PR Code Review',
   description:
@@ -28,8 +28,7 @@ const prForm = CodeReviewWorkflow.addStep(Schema.slack.functions.OpenForm, {
       {
         name: 'priority',
         title: 'Priority',
-        description:
-          'The urgency of your Pull Request, helps indicate time sensitivity.',
+        description: 'The urgency of your Pull Request, helps indicate time sensitivity.',
         type: Schema.types.string,
         enum: ['low', 'medium', 'high'],
         choices: [
@@ -64,8 +63,7 @@ const prForm = CodeReviewWorkflow.addStep(Schema.slack.functions.OpenForm, {
       {
         name: 'pr_description',
         title: 'Pull Request Description',
-        description:
-          'A description that will be posted with your Pull Request. Supports Slack Markdown.',
+        description: 'A description that will be posted with your Pull Request. Supports Slack Markdown.',
         type: Schema.types.string,
         long: true
       }
@@ -82,5 +80,3 @@ CodeReviewWorkflow.addStep(CodeReviewFunction, {
   pr_url: prForm.outputs.fields.pr_url,
   pr_description: prForm.outputs.fields.pr_description
 })
-
-export default CodeReviewWorkflow

@@ -1,7 +1,8 @@
 import { Manifest } from 'deno-slack-sdk/mod.ts'
-import CodeReviewEvent from './event_types/code_review_event.ts'
+import { CodeReviewDatastore } from './datastores/code_review_datastore.ts'
+import { CodeReviewEvent } from './event_types/code_review_event.ts'
 import { CodeReviewFunction } from './functions/code_review_function.ts'
-import CodeReviewWorkflow from './workflows/code_review_workflow.ts'
+import { CodeReviewWorkflow } from './workflows/code_review_workflow.ts'
 
 /**
  * The app manifest contains the app's configuration. This
@@ -17,13 +18,18 @@ export default Manifest({
   functions: [CodeReviewFunction],
   workflows: [CodeReviewWorkflow],
   events: [CodeReviewEvent],
+  datastores: [CodeReviewDatastore],
   outgoingDomains: [],
   botScopes: [
     'commands',
     'chat:write',
     'chat:write.public',
     'chat:write.customize',
-    'reactions:read'
+    'reactions:read',
+    'groups:history',
+    'groups:read',
+    'datastore:read',
+    'datastore:write'
   ],
   features: {
     appHome: {

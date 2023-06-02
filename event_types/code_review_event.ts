@@ -1,6 +1,6 @@
 import { DefineEvent, Schema } from 'deno-slack-sdk/mod.ts'
 
-const CodeReviewEvent = DefineEvent({
+export const CodeReviewEvent = DefineEvent({
   name: 'code_review_event',
   title: 'Code Review',
   type: Schema.types.object,
@@ -19,5 +19,3 @@ const CodeReviewEvent = DefineEvent({
   required: ['author', 'channel_id', 'priority', 'issue_id', 'pr_url'],
   additionalProperties: false
 })
-
-export default CodeReviewEvent

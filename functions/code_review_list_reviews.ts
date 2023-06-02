@@ -28,12 +28,7 @@ export async function listReviews(client: SlackAPIClient, userId: string, channe
   const incompleteReviews = await addPermaLinks(
     client,
     channelId,
-    allBotMessages.filter(
-      (botMessage) =>
-        botMessage?.blocks?.some((block: BlockElement) => block?.type === 'actions') &&
-        botMessage?.metadata?.event_payload?.approver === undefined &&
-        botMessage?.metadata?.event_payload?.decliner === undefined
-    )
+    allBotMessages.filter((botMessage) => botMessage?.blocks?.some((block: BlockElement) => block?.type === 'actions'))
   )
 
   const postIncompleteReviews = await client.chat.postEphemeral({

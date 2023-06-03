@@ -1,5 +1,5 @@
-import { getCodeReviewPriority } from './code_review_message.ts'
-import { createCodeReviewMetadata } from './code_review_metadata.ts'
+import { getCodeReviewPriority } from './review_message.ts'
+import { createCodeReviewMetadata } from './review_metadata.ts'
 
 export function codeReviewEditModal(metadata: ReturnType<typeof createCodeReviewMetadata>) {
   return {

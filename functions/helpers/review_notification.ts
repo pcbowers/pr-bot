@@ -1,6 +1,6 @@
 import { SlackAPIClient } from 'deno-slack-api/types.ts'
-import { CodeReviewEvent } from '../event_types/code_review_event.ts'
-import { getCodeReviewPriority } from './code_review_message.ts'
+import { CodeReviewEvent } from '../../event_types/code_review_event.ts'
+import { getCodeReviewPriority } from './review_message.ts'
 
 interface Reaction {
   name: string
@@ -24,7 +24,7 @@ type EventPayload = Partial<{
 
 export async function codeReviewNotification(
   client: SlackAPIClient,
-  channel: string,
+  channelId: string,
   timestamp: string,
   responsibleUser: string,
   action_id: string,
@@ -35,7 +35,7 @@ export async function codeReviewNotification(
   }
 
   const reactions = await client.reactions.get({
-    channel: channel,
+    channel: channelId,
     timestamp: timestamp,
     full: true
   })

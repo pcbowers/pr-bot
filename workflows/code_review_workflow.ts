@@ -11,7 +11,7 @@ export const CodeReviewWorkflow = DefineWorkflow({
       interactivity: {
         type: Schema.slack.types.interactivity
       },
-      channel: {
+      channel_id: {
         type: Schema.slack.types.channel_id
       }
     },
@@ -74,7 +74,7 @@ const prForm = CodeReviewWorkflow.addStep(Schema.slack.functions.OpenForm, {
 
 CodeReviewWorkflow.addStep(CodeReviewFunction, {
   interactivity: prForm.outputs.interactivity,
-  channel: CodeReviewWorkflow.inputs.channel,
+  channel_id: CodeReviewWorkflow.inputs.channel_id,
   priority: prForm.outputs.fields.priority,
   issue_id: prForm.outputs.fields.issue_id,
   pr_url: prForm.outputs.fields.pr_url,

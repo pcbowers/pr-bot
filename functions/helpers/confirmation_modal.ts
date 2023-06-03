@@ -1,4 +1,4 @@
-import { CodeReviewEvent } from '../event_types/code_review_event.ts'
+import { CodeReviewEvent } from '../../event_types/code_review_event.ts'
 
 type EventPayload = Partial<{
   [P in keyof typeof CodeReviewEvent.definition.properties]: string

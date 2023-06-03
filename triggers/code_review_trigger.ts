@@ -11,7 +11,7 @@ const CodeReviewTrigger: Trigger<typeof CodeReviewWorkflow.definition> = {
     interactivity: {
       value: '{{data.interactivity}}'
     },
-    channel: {
+    channel_id: {
       value: '{{data.channel_id}}'
     }
   }

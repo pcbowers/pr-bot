@@ -1,8 +1,8 @@
 import { BlockActionsBody } from 'deno-slack-sdk/functions/interactivity/block_actions_types.ts'
 import { BlockAction } from 'deno-slack-sdk/functions/interactivity/block_kit_types.ts'
 import { FunctionRuntimeParameters } from 'deno-slack-sdk/functions/types.ts'
-import { CodeReviewEvent } from '../event_types/code_review_event.ts'
-import { CodeReviewFunction } from './code_review_function.ts'
+import { CodeReviewEvent } from '../../event_types/code_review_event.ts'
+import { CodeReviewFunction } from '../code_review_function.ts'
 import { ViewSubmissionBody } from 'https://deno.land/x/deno_slack_sdk@2.1.2/functions/interactivity/view_types.ts'
 
 export function createCodeReviewMetadata(
@@ -16,7 +16,7 @@ export function createCodeReviewMetadata(
   return {
     event_type: CodeReviewEvent,
     event_payload: {
-      channel_id: body.container.channel_id ?? inputs.channel,
+      channel_id: body.container.channel_id ?? inputs.channel_id,
       message_ts: body.container.message_ts,
       author: body.message?.metadata?.event_payload?.author,
       claimer:

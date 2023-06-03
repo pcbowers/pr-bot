@@ -1,11 +1,11 @@
 import { DefineFunction, Schema, SlackFunction } from 'deno-slack-sdk/mod.ts'
 import { CodeReviewEvent } from '../event_types/code_review_event.ts'
-import { codeReviewConfirmModal } from './code_review_confirm_modal.ts'
-import { codeReviewEditModal } from './code_review_edit_modal.ts'
-import { listReviews } from './code_review_list_reviews.ts'
-import { createCodeReviewMessage } from './code_review_message.ts'
-import { createCodeReviewMetadata } from './code_review_metadata.ts'
-import { codeReviewNotification } from './code_review_notification.ts'
+import { codeReviewConfirmModal } from './helpers/confirmation_modal.ts'
+import { listIncompleteReviews } from './helpers/incomplete_message.ts'
+import { codeReviewEditModal } from './helpers/review_edit.ts'
+import { createCodeReviewMessage } from './helpers/review_message.ts'
+import { createCodeReviewMetadata } from './helpers/review_metadata.ts'
+import { codeReviewNotification } from './helpers/review_notification.ts'
 
 export const CodeReviewFunction = DefineFunction({
   callback_id: 'code_review_function',
@@ -14,13 +14,13 @@ export const CodeReviewFunction = DefineFunction({
   input_parameters: {
     properties: {
       interactivity: { type: Schema.slack.types.interactivity },
-      channel: { type: Schema.slack.types.channel_id },
+      channel_id: { type: Schema.slack.types.channel_id },
       priority: { type: Schema.types.string },
       issue_id: { type: Schema.types.string },
       pr_url: { type: Schema.types.string },
       pr_description: { type: Schema.types.string }
     },
-    required: ['interactivity', 'channel', 'priority', 'issue_id', 'pr_url']
+    required: ['interactivity', 'channel_id', 'priority', 'issue_id', 'pr_url']
   },
   output_parameters: {
     properties: {
@@ -44,7 +44,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
   const metadata = {
     event_type: CodeReviewEvent,
     event_payload: {
-      channel_id: inputs.channel,
+      channel_id: inputs.channel_id,
       author: inputs.interactivity.interactor.id,
       priority: inputs.priority,
       issue_id: inputs.issue_id,
@@ -54,7 +54,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
   }
 
   const msgResponse = await client.chat.postMessage({
-    channel: inputs.channel,
+    channel: inputs.channel_id,
     blocks: createCodeReviewMessage(metadata.event_payload, false),
     unfurl_links: false,
     unfurl_media: false,
@@ -134,7 +134,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
         action.action_id === 'list_incomplete_reviews' ||
         action?.selected_option?.value === 'list_incomplete_reviews'
       ) {
-        await listReviews(client, body.user.id, inputs.channel)
+        await listIncompleteReviews(client, body.user.id, inputs.channel_id)
       }
 
       if (viewResponse && !viewResponse.ok) {
@@ -153,7 +153,6 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
 
     if (!msgResponse.ok) {
       console.log('Error during request chat.delete!', msgResponse)
-      return { response_action: 'clear' }
     } else {
       client.functions.completeSuccess({
         function_execution_id: body.function_data.execution_id,
@@ -186,7 +185,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
     const metadata = {
       event_type: CodeReviewEvent,
       event_payload: {
-        channel_id: private_metadata.channel_id ?? inputs.channel,
+        channel_id: private_metadata.channel_id ?? inputs.channel_id,
         message_ts: private_metadata.message_ts,
         author: private_metadata.author,
         claimer: private_metadata.claimer,

@@ -3,7 +3,7 @@ import { ListIncompleteReviewsWorkflow } from '../workflows/list_incomplete_revi
 
 const ListIncompleteReviewsTrigger: Trigger<typeof ListIncompleteReviewsWorkflow.definition> = {
   type: 'shortcut',
-  name: 'List Incomplete PR Code Reviews',
+  name: 'List Incomplete PR Reviews',
   description: 'List the Incomplete PR Code Reviews from your current channel.',
   workflow: '#/workflows/list_incomplete_reviews_workflow',
   inputs: {

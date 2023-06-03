@@ -1,6 +1,6 @@
 import { DefineDatastore, Schema } from 'deno-slack-sdk/mod.ts'
 
-export const CodeReviewDatastore = DefineDatastore({
+export const OldestCodeReviewDatastore = DefineDatastore({
   name: 'code_review_datastore',
   attributes: {
     id: {

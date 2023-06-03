@@ -1,5 +1,5 @@
 import { DefineFunction, Schema, SlackFunction } from 'deno-slack-sdk/mod.ts'
-import { listReviews } from './code_review_list_reviews.ts'
+import { listIncompleteReviews } from './helpers/incomplete_message.ts'
 
 export const ListIncompleteReviewsFunction = DefineFunction({
   callback_id: 'list_incomplete_reviews_function',
@@ -29,7 +29,5 @@ export const ListIncompleteReviewsFunction = DefineFunction({
 })
 
 export default SlackFunction(ListIncompleteReviewsFunction, async ({ inputs, client }) => {
-  return {
-    outputs: await listReviews(client, inputs.user_id, inputs.channel_id)
-  }
+  return { outputs: await listIncompleteReviews(client, inputs.user_id, inputs.channel_id) }
 })

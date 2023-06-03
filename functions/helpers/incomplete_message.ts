@@ -1,8 +1,9 @@
 import { SlackAPIClient } from 'deno-slack-api/types.ts'
 import { BlockElement } from 'deno-slack-sdk/functions/interactivity/block_kit_types.ts'
-import { CodeReviewDatastore } from '../datastores/code_review_datastore.ts'
-import { CodeReviewEvent } from '../event_types/code_review_event.ts'
-import { ISSUE_URL_PREFIX, getCodeReviewIcon, getCodeReviewState } from './code_review_message.ts'
+import { OldestCodeReviewDatastore } from '../../datastores/oldest_code_review_datastore.ts'
+import { CodeReviewEvent } from '../../event_types/code_review_event.ts'
+import { ListIncompleteReviewsEvent } from '../../event_types/list_incomplete_reviews_event.ts'
+import { ISSUE_URL_PREFIX, getCodeReviewIcon, getCodeReviewState, createButton } from './review_message.ts'
 
 type EventPayload = Partial<{
   [P in keyof typeof CodeReviewEvent.definition.properties]: string
@@ -21,7 +22,7 @@ interface HistoryMessage {
   [key: string]: unknown
 }
 
-export async function listReviews(client: SlackAPIClient, userId: string, channelId: string) {
+export async function listIncompleteReviews(client: SlackAPIClient, userId: string, channelId: string) {
   const channelName = await getChannelName(client, channelId)
   const timestamp = await getOldestReview(client, channelId)
   const allBotMessages = await getCodeReviews(client, channelId, timestamp)
@@ -31,11 +32,20 @@ export async function listReviews(client: SlackAPIClient, userId: string, channe
     allBotMessages.filter((botMessage) => botMessage?.blocks?.some((block: BlockElement) => block?.type === 'actions'))
   )
 
+  const metadata = {
+    event_type: ListIncompleteReviewsEvent,
+    event_payload: {
+      count: incompleteReviews.length,
+      reviews: incompleteReviews.map((botMessage) => botMessage.ts)
+    }
+  }
+
   const postIncompleteReviews = await client.chat.postEphemeral({
     channel: channelId,
     user: userId,
     username: 'Incomplete Reviews',
     icon_url: 'https://raw.githubusercontent.com/pcbowers/pr-bot/main/assets/icon.png',
+    metadata,
     blocks: [
       {
         type: 'header',
@@ -69,10 +79,7 @@ export async function listReviews(client: SlackAPIClient, userId: string, channe
     console.log('Error during request chat.postMessage!', postIncompleteReviews)
   }
 
-  return {
-    count: incompleteReviews.length,
-    reviews: incompleteReviews.map((botMessage) => botMessage.ts)
-  }
+  return metadata.event_payload
 }
 
 function createReviewMessageBlock(botMessage: HistoryMessage) {
@@ -171,7 +178,7 @@ async function getChannelName(client: SlackAPIClient, channel: string) {
 }
 
 async function getOldestReview(client: SlackAPIClient, channel: string) {
-  const oldestReview = await client.apps.datastore.get<typeof CodeReviewDatastore.definition>({
+  const oldestReview = await client.apps.datastore.get<typeof OldestCodeReviewDatastore.definition>({
     datastore: 'code_review_datastore',
     id: 'oldest_review_' + channel
   })
@@ -185,7 +192,7 @@ async function getOldestReview(client: SlackAPIClient, channel: string) {
 }
 
 async function updateOldestReview(client: SlackAPIClient, channel: string, timestamp: string) {
-  const updateOldestIncompleteReview = await client.apps.datastore.update<typeof CodeReviewDatastore.definition>({
+  const updateOldestIncompleteReview = await client.apps.datastore.update<typeof OldestCodeReviewDatastore.definition>({
     datastore: 'code_review_datastore',
     item: {
       id: 'oldest_review_' + channel,

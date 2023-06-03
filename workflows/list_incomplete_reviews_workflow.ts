@@ -3,7 +3,7 @@ import { ListIncompleteReviewsFunction } from '../functions/list_incomplete_revi
 
 export const ListIncompleteReviewsWorkflow = DefineWorkflow({
   callback_id: 'list_incomplete_reviews_workflow',
-  title: 'List Incomplete PR Code Reviews',
+  title: 'List Incomplete PR Reviews',
   description: 'List the Incomplete PR Code Reviews from your current channel.',
   input_parameters: {
     properties: {

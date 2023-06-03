@@ -1,6 +1,6 @@
 import { WorkflowStepInputs } from 'deno-slack-sdk/workflows/types.ts'
-import { CodeReviewEvent } from '../event_types/code_review_event.ts'
-import { CodeReviewFunction } from './code_review_function.ts'
+import { CodeReviewEvent } from '../../event_types/code_review_event.ts'
+import { CodeReviewFunction } from '../code_review_function.ts'
 
 type EventPayload = Partial<{
   [P in keyof typeof CodeReviewEvent.definition.properties]: string
@@ -159,7 +159,7 @@ function getButtons(state: State, complete: boolean) {
   return baseButtons
 }
 
-function createButton(buttonData: ButtonData) {
+export function createButton(buttonData: ButtonData) {
   return {
     type: 'button',
     text: {

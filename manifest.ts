@@ -1,5 +1,5 @@
 import { Manifest } from 'deno-slack-sdk/mod.ts'
-import { CodeReviewDatastore } from './datastores/code_review_datastore.ts'
+import { OldestCodeReviewDatastore } from './datastores/oldest_code_review_datastore.ts'
 import { CodeReviewEvent } from './event_types/code_review_event.ts'
 import { CodeReviewFunction } from './functions/code_review_function.ts'
 import { CodeReviewWorkflow } from './workflows/code_review_workflow.ts'
@@ -20,7 +20,7 @@ export default Manifest({
   functions: [CodeReviewFunction, ListIncompleteReviewsFunction],
   workflows: [CodeReviewWorkflow, ListIncompleteReviewsWorkflow],
   events: [CodeReviewEvent],
-  datastores: [CodeReviewDatastore],
+  datastores: [OldestCodeReviewDatastore],
   outgoingDomains: [],
   botScopes: [
     'commands',

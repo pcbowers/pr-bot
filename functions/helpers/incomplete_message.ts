@@ -3,7 +3,7 @@ import { BlockElement } from 'deno-slack-sdk/functions/interactivity/block_kit_t
 import { OldestCodeReviewDatastore } from '../../datastores/oldest_code_review_datastore.ts'
 import { CodeReviewEvent } from '../../event_types/code_review_event.ts'
 import { ListIncompleteReviewsEvent } from '../../event_types/list_incomplete_reviews_event.ts'
-import { ISSUE_URL_PREFIX, getCodeReviewIcon, getCodeReviewState, createButton } from './review_message.ts'
+import { ISSUE_URL_PREFIX, getCodeReviewIcon, getCodeReviewState } from './review_message.ts'
 
 type EventPayload = Partial<{
   [P in keyof typeof CodeReviewEvent.definition.properties]: string

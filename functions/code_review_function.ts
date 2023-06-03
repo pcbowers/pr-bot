@@ -61,7 +61,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
     username: 'Pull Request',
     icon_url: 'https://raw.githubusercontent.com/pcbowers/pr-bot/main/assets/icon.png',
     text: 'A new Pull Request is ready for Code Review!',
-    metadata
+    metadata: metadata
   })
 
   if (!msgResponse.ok) {
@@ -134,7 +134,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
         action.action_id === 'list_incomplete_reviews' ||
         action?.selected_option?.value === 'list_incomplete_reviews'
       ) {
-        await listIncompleteReviews(client, body.user.id, inputs.channel_id)
+        await listIncompleteReviews(client, body.user.id, metadata.event_payload.channel_id)
       }
 
       if (viewResponse && !viewResponse.ok) {
@@ -201,7 +201,6 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
     const msgResponse = await client.chat.update({
       channel: private_metadata.channel_id,
       ts: private_metadata.message_ts,
-      username: inputs.issue_id,
       blocks: createCodeReviewMessage(metadata.event_payload, false),
       metadata: metadata
     })

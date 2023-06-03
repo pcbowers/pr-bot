@@ -45,7 +45,6 @@ export async function listIncompleteReviews(client: SlackAPIClient, userId: stri
     user: userId,
     username: 'Incomplete Reviews',
     icon_url: 'https://raw.githubusercontent.com/pcbowers/pr-bot/main/assets/icon.png',
-    metadata,
     blocks: [
       {
         type: 'header',

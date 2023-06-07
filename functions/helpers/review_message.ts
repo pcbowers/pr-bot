@@ -17,14 +17,14 @@ interface ButtonData {
   style?: 'primary' | 'danger'
 }
 
-type State = 'authored' | 'claimed' | 'approved' | 'declined'
+type State = 'authored' | 'claimed' | 'marked' | 'approved' | 'declined'
 
 export const ISSUE_URL_PREFIX = 'https://jira.os.liberty.edu/browse/'
 
 export function createCodeReviewMessage(event_payload: EventPayload, complete: boolean) {
   const state = getCodeReviewState(event_payload)
   const priority = getCodeReviewPriority(event_payload.priority)
-  const icon = getCodeReviewIcon(state)
+  const icon = getCodeReviewIcon(state, event_payload.mark)
   const logs = getLogs(event_payload)
   const buttons = getButtons(state, complete)
 
@@ -84,15 +84,19 @@ export function getCodeReviewPriority(priority: CodeReviewInputParameters['prior
 export function getCodeReviewState(event_payload: EventPayload): State {
   if (event_payload.approver) return 'approved'
   if (event_payload.decliner) return 'declined'
+  if (event_payload.marker) return 'marked'
   if (event_payload.claimer) return 'claimed'
   return 'authored'
 }
 
-export function getCodeReviewIcon(state: string) {
+export function getCodeReviewIcon(state: State, mark = '') {
   if (state === 'authored') return ':tada:'
   if (state === 'claimed') return ':eyes:'
   if (state === 'approved') return ':white_check_mark:'
   if (state === 'declined') return ':no_entry_sign:'
+  if (state === 'marked') {
+    if (mark === 'Needs Work') return ':construction:'
+  }
   return ':tada:'
 }
 
@@ -101,6 +105,10 @@ function getLogs(event_payload: EventPayload) {
 
   if (event_payload.claimer) {
     text.push(`_Claimed By: *<@${event_payload.claimer}>*_`)
+  }
+
+  if (event_payload.marker) {
+    text.push(`_Marked as '${event_payload.mark}' By: *<@${event_payload.marker}>*_`)
   }
 
   if (event_payload.approver) {
@@ -134,6 +142,7 @@ function getButtons(state: State, complete: boolean) {
   if (state === 'claimed') {
     return [
       createButton({ title: 'Remove Claim', action_id: 'unclaim' }),
+      createButton({ title: 'Mark Review', action_id: 'mark' }),
       createButton({
         title: 'Approve',
         action_id: 'approve',
@@ -146,6 +155,10 @@ function getButtons(state: State, complete: boolean) {
       }),
       ...baseButtons
     ]
+  }
+
+  if (state === 'marked') {
+    return [createButton({ title: 'Remove Mark', action_id: 'unmark' }), ...baseButtons]
   }
 
   if (state === 'approved') {

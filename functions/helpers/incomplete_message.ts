@@ -86,11 +86,14 @@ function createReviewMessageBlock(botMessage: HistoryMessage) {
     type: 'section',
     text: {
       type: 'mrkdwn',
-      text: `${getCodeReviewIcon(getCodeReviewState(botMessage.metadata.event_payload))} <${
-        botMessage.metadata.event_payload.pr_url
-      }|Pull Request> Requested by *<@${botMessage.metadata.event_payload.author}>* for <${ISSUE_URL_PREFIX}${
-        botMessage.metadata.event_payload.issue_id
-      }|${botMessage.metadata.event_payload?.issue_id}>`
+      text: `${getCodeReviewIcon(
+        getCodeReviewState(botMessage.metadata.event_payload),
+        botMessage.metadata.event_payload.mark
+      )} <${botMessage.metadata.event_payload.pr_url}|Pull Request> Requested by *<@${
+        botMessage.metadata.event_payload.author
+      }>* for <${ISSUE_URL_PREFIX}${botMessage.metadata.event_payload.issue_id}|${
+        botMessage.metadata.event_payload?.issue_id
+      }>`
     },
     accessory: {
       type: 'button',

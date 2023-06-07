@@ -6,6 +6,7 @@ import { codeReviewEditModal } from './helpers/review_edit.ts'
 import { createCodeReviewMessage } from './helpers/review_message.ts'
 import { createCodeReviewMetadata } from './helpers/review_metadata.ts'
 import { codeReviewNotification } from './helpers/review_notification.ts'
+import { codeReviewMarkModal } from './helpers/review_mark.ts'
 
 export const CodeReviewFunction = DefineFunction({
   callback_id: 'code_review_function',
@@ -29,6 +30,8 @@ export const CodeReviewFunction = DefineFunction({
       message_ts: { type: Schema.slack.types.message_ts },
       author: { type: Schema.slack.types.user_id },
       claimer: { type: Schema.slack.types.user_id },
+      marker: { type: Schema.slack.types.user_id },
+      mark: { type: Schema.types.string },
       approver: { type: Schema.slack.types.user_id },
       decliner: { type: Schema.slack.types.user_id },
       priority: { type: Schema.types.string },
@@ -74,7 +77,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
     return { completed: false }
   })
   .addBlockActionsHandler(
-    ['claim', 'unclaim', 'approve', 'unapprove', 'decline', 'undecline'],
+    ['claim', 'unclaim', 'unmark', 'approve', 'unapprove', 'decline', 'undecline'],
     async ({ action, inputs, body, client }) => {
       const metadata = createCodeReviewMetadata(action, body, inputs)
 
@@ -102,7 +105,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
     }
   )
   .addBlockActionsHandler(
-    ['overflow', 'complete', 'delete', 'edit', 'list_incomplete_reviews'],
+    ['overflow', 'complete', 'delete', 'edit', 'mark', 'list_incomplete_reviews'],
     async ({ action, body, client, inputs }) => {
       const metadata = createCodeReviewMetadata(action, body, inputs)
       let viewResponse: Awaited<ReturnType<typeof client.views.open>> | undefined = undefined
@@ -130,6 +133,11 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
           trigger_id: body.interactivity.interactivity_pointer,
           view: codeReviewEditModal(metadata)
         })
+      } else if (action.action_id === 'mark' || action?.selected_option?.value === 'mark') {
+        viewResponse = await client.views.open({
+          trigger_id: body.interactivity.interactivity_pointer,
+          view: codeReviewMarkModal(metadata)
+        })
       } else if (
         action.action_id === 'list_incomplete_reviews' ||
         action?.selected_option?.value === 'list_incomplete_reviews'
@@ -143,12 +151,12 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
     }
   )
   .addViewSubmissionHandler('delete_modal', async ({ body, client }) => {
-    const event_payload = JSON.parse(body.view.private_metadata || '{}') as ReturnType<
+    const private_metadata = JSON.parse(body.view.private_metadata || '{}') as ReturnType<
       typeof createCodeReviewMetadata
     >['event_payload']
     const msgResponse = await client.chat.delete({
-      channel: event_payload.channel_id,
-      ts: event_payload.message_ts
+      channel: private_metadata.channel_id,
+      ts: private_metadata.message_ts
     })
 
     if (!msgResponse.ok) {
@@ -156,19 +164,24 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
     } else {
       client.functions.completeSuccess({
         function_execution_id: body.function_data.execution_id,
-        outputs: { type: 'delete', ...event_payload }
+        outputs: { type: 'delete', ...private_metadata }
       })
     }
   })
   .addViewSubmissionHandler('complete_modal', async ({ body, client }) => {
-    const event_payload = JSON.parse(body.view.private_metadata || '{}') as ReturnType<
+    const private_metadata = JSON.parse(body.view.private_metadata || '{}') as ReturnType<
       typeof createCodeReviewMetadata
     >['event_payload']
+    const metadata = {
+      event_type: CodeReviewEvent,
+      event_payload: private_metadata
+    }
+
     const msgResponse = await client.chat.update({
-      channel: event_payload.channel_id,
-      ts: event_payload.message_ts,
-      blocks: createCodeReviewMessage(event_payload, true),
-      metadata: event_payload
+      channel: private_metadata.channel_id,
+      ts: private_metadata.message_ts,
+      blocks: createCodeReviewMessage(private_metadata, true),
+      metadata: metadata
     })
 
     if (!msgResponse.ok) {
@@ -176,12 +189,46 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
     } else {
       client.functions.completeSuccess({
         function_execution_id: body.function_data.execution_id,
-        outputs: { type: 'complete', ...event_payload }
+        outputs: { type: 'complete', ...private_metadata }
       })
     }
   })
+  .addViewSubmissionHandler('mark_modal', async ({ body, client }) => {
+    const private_metadata = JSON.parse(body.view.private_metadata || '{}') as ReturnType<
+      typeof createCodeReviewMetadata
+    >['event_payload']
+    const metadata = {
+      event_type: CodeReviewEvent,
+      event_payload: {
+        ...private_metadata,
+        mark: body.view.state.values.mark_section.mark.selected_option.value
+      }
+    }
+
+    const msgResponse = await client.chat.update({
+      channel: private_metadata.channel_id,
+      ts: private_metadata.message_ts,
+      blocks: createCodeReviewMessage(metadata.event_payload, false),
+      metadata: metadata
+    })
+
+    if (!msgResponse.ok) {
+      console.log('Error during request chat.update!', msgResponse)
+    }
+
+    codeReviewNotification(
+      client,
+      private_metadata.channel_id,
+      private_metadata.message_ts,
+      body.user.id,
+      'mark',
+      metadata.event_payload
+    )
+  })
   .addViewSubmissionHandler('edit_modal', async ({ body, inputs, client }) => {
-    const private_metadata = JSON.parse(body.view.private_metadata || '{}')
+    const private_metadata = JSON.parse(body.view.private_metadata || '{}') as ReturnType<
+      typeof createCodeReviewMetadata
+    >['event_payload']
     const metadata = {
       event_type: CodeReviewEvent,
       event_payload: {
@@ -189,6 +236,8 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
         message_ts: private_metadata.message_ts,
         author: private_metadata.author,
         claimer: private_metadata.claimer,
+        marker: private_metadata.marker,
+        mark: private_metadata.mark,
         approver: private_metadata.approver,
         decliner: private_metadata.decliner,
         priority: body.view.state.values.priority_section.priority.selected_option.value,

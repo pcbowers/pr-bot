@@ -30,7 +30,9 @@ export async function codeReviewNotification(
   action_id: string,
   event_payload: EventPayload
 ) {
-  if (!['edit', 'unclaim', 'claim', 'unapprove', 'approve', 'undecline', 'decline'].includes(action_id)) {
+  if (
+    !['edit', 'unclaim', 'claim', 'unmark', 'mark', 'unapprove', 'approve', 'undecline', 'decline'].includes(action_id)
+  ) {
     return
   }
 
@@ -45,7 +47,7 @@ export async function codeReviewNotification(
   }
 
   const message = reactions.message as ReactionMessage
-  const icon = getIcon(action_id)
+  const icon = getIcon(action_id, event_payload.mark)
   const priority = getCodeReviewPriority(event_payload.priority)
   const issueUrlPrefix = 'https://jira.os.liberty.edu/browse/'
   const notificationMessage = getNotificationMessage(action_id, event_payload, responsibleUser)
@@ -110,7 +112,7 @@ export async function codeReviewNotification(
     })
 }
 
-function getIcon(action_id: string) {
+function getIcon(action_id: string, mark = '') {
   if (action_id === 'unapprove') return ':open_book:'
   if (action_id === 'approve') return ':white_check_mark:'
   if (action_id === 'undecline') return ':open_book:'
@@ -118,6 +120,10 @@ function getIcon(action_id: string) {
   if (action_id === 'claim') return ':eyes:'
   if (action_id === 'unclaim') return ':dark_sunglasses:'
   if (action_id === 'edit') return ':pencil2:'
+  if (action_id === 'unmark') return ':black_nib:'
+  if (action_id === 'mark') {
+    if (mark === 'Needs Work') return ':construction:'
+  }
   return ':tada:'
 }
 
@@ -144,6 +150,14 @@ function getNotificationMessage(action_id: string, event_payload: EventPayload, 
 
   if (action_id === 'unclaim') {
     return `<@${currentUserId}> Unclaimed the Pull Request for ${event_payload.issue_id}.`
+  }
+
+  if (action_id === 'mark') {
+    return `<@${currentUserId}> Marked the Pull Request as '${event_payload.mark}' for ${event_payload.issue_id}.`
+  }
+
+  if (action_id === 'unmark') {
+    return `<@${currentUserId}> Unmarked the Pull Request for ${event_payload.issue_id}.`
   }
 
   if (action_id === 'edit') {

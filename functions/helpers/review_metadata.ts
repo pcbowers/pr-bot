@@ -25,6 +25,12 @@ export function createCodeReviewMetadata(
           : action.action_id === 'claim'
           ? body.user.id
           : body.message?.metadata?.event_payload?.claimer,
+      marker:
+        action.action_id === 'unmark'
+          ? undefined
+          : action.action_id === 'mark'
+          ? body.user.id
+          : body.message?.metadata?.event_payload?.marker,
       approver:
         action.action_id === 'unapprove'
           ? undefined
@@ -37,6 +43,7 @@ export function createCodeReviewMetadata(
           : action.action_id === 'decline'
           ? body.user.id
           : body.message?.metadata?.event_payload?.decliner,
+      mark: action.action_id === 'unmark' ? undefined : body.message?.metadata?.event_payload?.mark,
       priority: body.message?.metadata?.event_payload?.priority ?? inputs.priority,
       issue_id: body.message?.metadata?.event_payload?.issue_id ?? inputs.issue_id,
       pr_url: body.message?.metadata?.event_payload?.pr_url ?? inputs.pr_url,

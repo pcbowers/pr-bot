@@ -9,6 +9,8 @@ export const CodeReviewEvent = DefineEvent({
     message_ts: { type: Schema.slack.types.message_ts },
     author: { type: Schema.slack.types.user_id },
     claimer: { type: Schema.slack.types.user_id },
+    marker: { type: Schema.slack.types.user_id },
+    mark: { type: Schema.types.string },
     approver: { type: Schema.slack.types.user_id },
     decliner: { type: Schema.slack.types.user_id },
     priority: { type: Schema.types.string },

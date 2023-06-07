@@ -1,19 +1,15 @@
 import { SlackAPIClient } from 'deno-slack-api/types.ts'
 import { BlockElement } from 'deno-slack-sdk/functions/interactivity/block_kit_types.ts'
 import { OldestCodeReviewDatastore } from '../../datastores/oldest_code_review_datastore.ts'
-import { CodeReviewEvent } from '../../event_types/code_review_event.ts'
 import { ListIncompleteReviewsEvent } from '../../event_types/list_incomplete_reviews_event.ts'
 import { ISSUE_URL_PREFIX, getCodeReviewIcon, getCodeReviewState } from './review_message.ts'
-
-type EventPayload = Partial<{
-  [P in keyof typeof CodeReviewEvent.definition.properties]: string
-}>
+import { createCodeReviewMetadata } from './review_metadata.ts'
 
 interface HistoryMessage {
   blocks: BlockElement[]
   metadata: {
     event_type: string
-    event_payload: EventPayload
+    event_payload: ReturnType<typeof createCodeReviewMetadata>['event_payload']
   }
   ts: string
   type: string

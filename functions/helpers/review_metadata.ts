@@ -47,7 +47,8 @@ export function createCodeReviewMetadata(
       priority: body.message?.metadata?.event_payload?.priority ?? inputs.priority,
       issue_id: body.message?.metadata?.event_payload?.issue_id ?? inputs.issue_id,
       pr_url: body.message?.metadata?.event_payload?.pr_url ?? inputs.pr_url,
-      pr_description: body.message?.metadata?.event_payload?.pr_description ?? inputs.pr_description
+      pr_description: body.message?.metadata?.event_payload?.pr_description ?? inputs.pr_description,
+      subscribed: body.message?.metadata?.event_payload?.subscribed ?? []
     }
   }
 }

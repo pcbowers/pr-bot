@@ -1,8 +1,6 @@
-import { CodeReviewEvent } from '../../event_types/code_review_event.ts'
+import { createCodeReviewMetadata } from './review_metadata.ts'
 
-type EventPayload = Partial<{
-  [P in keyof typeof CodeReviewEvent.definition.properties]: string
-}>
+type EventPayload = Partial<ReturnType<typeof createCodeReviewMetadata>['event_payload']>
 
 export function codeReviewConfirmModal(event_payload: EventPayload, modalText: string, callback_id: string) {
   return {
@@ -12,7 +10,7 @@ export function codeReviewConfirmModal(event_payload: EventPayload, modalText: s
     private_metadata: JSON.stringify(event_payload),
     title: {
       type: 'plain_text',
-      text: 'Are You Sure?',
+      text: '⚠️ Are You Sure? ⚠️',
       emoji: true
     },
     submit: {

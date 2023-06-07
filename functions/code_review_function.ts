@@ -37,7 +37,8 @@ export const CodeReviewFunction = DefineFunction({
       priority: { type: Schema.types.string },
       issue_id: { type: Schema.types.string },
       pr_url: { type: Schema.types.string },
-      pr_description: { type: Schema.types.string }
+      pr_description: { type: Schema.types.string },
+      subscribed: { type: Schema.types.array, items: { type: Schema.slack.types.user_id }, default: [] }
     },
     required: ['type', 'author', 'channel_id', 'priority', 'issue_id', 'pr_url']
   }
@@ -52,7 +53,8 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
       priority: inputs.priority,
       issue_id: inputs.issue_id,
       pr_url: inputs.pr_url,
-      pr_description: inputs.pr_description
+      pr_description: inputs.pr_description,
+      subscribed: []
     }
   }
 
@@ -138,6 +140,37 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
           trigger_id: body.interactivity.interactivity_pointer,
           view: codeReviewMarkModal(metadata)
         })
+      } else if (action.action_id === 'notify' || action?.selected_option?.value === 'notify') {
+        let action: string
+        if (metadata.event_payload.subscribed.includes(body.user.id)) {
+          action = 'unsubscribe'
+          metadata.event_payload.subscribed = metadata.event_payload.subscribed.filter(
+            (id: string) => id !== body.user.id
+          )
+        } else {
+          action = 'subscribe'
+          metadata.event_payload.subscribed = [...new Set([...metadata.event_payload.subscribed, body.user.id])]
+        }
+
+        const msgResponse = await client.chat.update({
+          channel: body.container.channel_id,
+          ts: body.container.message_ts,
+          blocks: createCodeReviewMessage(metadata.event_payload, false),
+          metadata: metadata
+        })
+
+        if (!msgResponse.ok) {
+          console.log('Error during request chat.update!', msgResponse)
+        }
+
+        codeReviewNotification(
+          client,
+          body.container.channel_id,
+          body.container.message_ts,
+          body.user.id,
+          action,
+          metadata.event_payload
+        )
       } else if (
         action.action_id === 'list_incomplete_reviews' ||
         action?.selected_option?.value === 'list_incomplete_reviews'
@@ -225,21 +258,14 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
       metadata.event_payload
     )
   })
-  .addViewSubmissionHandler('edit_modal', async ({ body, inputs, client }) => {
+  .addViewSubmissionHandler('edit_modal', async ({ body, client }) => {
     const private_metadata = JSON.parse(body.view.private_metadata || '{}') as ReturnType<
       typeof createCodeReviewMetadata
     >['event_payload']
     const metadata = {
       event_type: CodeReviewEvent,
       event_payload: {
-        channel_id: private_metadata.channel_id ?? inputs.channel_id,
-        message_ts: private_metadata.message_ts,
-        author: private_metadata.author,
-        claimer: private_metadata.claimer,
-        marker: private_metadata.marker,
-        mark: private_metadata.mark,
-        approver: private_metadata.approver,
-        decliner: private_metadata.decliner,
+        ...private_metadata,
         priority: body.view.state.values.priority_section.priority.selected_option.value,
         issue_id: body.view.state.values.issue_id_section.issue_id.value,
         pr_url: body.view.state.values.pr_url_section.pr_url.value,

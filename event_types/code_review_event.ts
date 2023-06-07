@@ -16,7 +16,8 @@ export const CodeReviewEvent = DefineEvent({
     priority: { type: Schema.types.string },
     issue_id: { type: Schema.types.string },
     pr_url: { type: Schema.types.string },
-    pr_description: { type: Schema.types.string }
+    pr_description: { type: Schema.types.string },
+    subscribed: { type: Schema.types.array, items: { type: Schema.slack.types.user_id }, default: [] }
   },
   required: ['author', 'channel_id', 'priority', 'issue_id', 'pr_url'],
   additionalProperties: false

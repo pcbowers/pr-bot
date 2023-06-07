@@ -1,10 +1,8 @@
 import { WorkflowStepInputs } from 'deno-slack-sdk/workflows/types.ts'
-import { CodeReviewEvent } from '../../event_types/code_review_event.ts'
 import { CodeReviewFunction } from '../code_review_function.ts'
+import { createCodeReviewMetadata } from './review_metadata.ts'
 
-type EventPayload = Partial<{
-  [P in keyof typeof CodeReviewEvent.definition.properties]: string
-}>
+type EventPayload = Partial<ReturnType<typeof createCodeReviewMetadata>['event_payload']>
 
 type CodeReviewInputParameters = WorkflowStepInputs<
   NonNullable<typeof CodeReviewFunction.definition.input_parameters>['properties'],
@@ -192,6 +190,13 @@ function createOverflow() {
       {
         text: {
           type: 'plain_text',
+          text: 'Toggle Notifications'
+        },
+        value: 'notify'
+      },
+      {
+        text: {
+          type: 'plain_text',
           text: 'List Incomplete Reviews'
         },
         value: 'list_incomplete_reviews'
@@ -199,21 +204,21 @@ function createOverflow() {
       {
         text: {
           type: 'plain_text',
-          text: 'Edit'
+          text: 'Edit PR Review'
         },
         value: 'edit'
       },
       {
         text: {
           type: 'plain_text',
-          text: 'Complete'
+          text: 'Complete PR Review'
         },
         value: 'complete'
       },
       {
         text: {
           type: 'plain_text',
-          text: 'Delete'
+          text: 'Delete PR Review'
         },
         value: 'delete'
       }

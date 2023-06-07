@@ -140,7 +140,7 @@ function getButtons(state: State, complete: boolean) {
   if (state === 'claimed') {
     return [
       createButton({ title: 'Remove Claim', action_id: 'unclaim' }),
-      createButton({ title: 'Mark Review', action_id: 'mark' }),
+      createButton({ title: 'Mark', action_id: 'mark' }),
       createButton({
         title: 'Approve',
         action_id: 'approve',

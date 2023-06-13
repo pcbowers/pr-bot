@@ -21,33 +21,22 @@ export const ISSUE_URL_PREFIX = 'https://jira.os.liberty.edu/browse/'
 
 export function createCodeReviewMessage(event_payload: EventPayload, complete: boolean) {
   const state = getCodeReviewState(event_payload)
-  const priority = getCodeReviewPriority(event_payload.priority)
-  const icon = getCodeReviewIcon(state, event_payload.mark)
+  const priority = getCodeReviewPriority(event_payload.priority, true)
   const logs = getLogs(event_payload)
   const buttons = getButtons(state, complete)
 
   return [
     {
-      type: 'header',
-      text: {
-        type: 'plain_text',
-        text: `${icon} Pull Request for ${event_payload.issue_id} ${icon}`
-      }
-    },
-    {
       type: 'context',
       elements: [
         {
           type: 'mrkdwn',
-          text: `*${priority}*  | <${event_payload.pr_url}|See Pull Request> or <${ISSUE_URL_PREFIX}${event_payload.issue_id}|See Issue>`
+          text: `${priority} <${event_payload.pr_url}|See Pull Request> for <${ISSUE_URL_PREFIX}${event_payload.issue_id}|${event_payload.issue_id}> by <@${event_payload.author}>${logs}`
         }
       ]
     },
     ...(event_payload.pr_description && event_payload.pr_description !== '!undefined!'
       ? [
-          {
-            type: 'divider'
-          },
           {
             type: 'section',
             text: {
@@ -57,12 +46,8 @@ export function createCodeReviewMessage(event_payload: EventPayload, complete: b
           }
         ]
       : []),
-    ...logs,
     ...(buttons.length
       ? [
-          {
-            type: 'divider'
-          },
           {
             type: 'actions',
             elements: buttons
@@ -72,11 +57,11 @@ export function createCodeReviewMessage(event_payload: EventPayload, complete: b
   ]
 }
 
-export function getCodeReviewPriority(priority: CodeReviewInputParameters['priority']) {
-  if (priority === 'low') return '⚪️ Low Priority (Not Urgent)'
-  if (priority === 'medium') return '🔵 Medium Priority (Timely)'
-  if (priority === 'high') return '🔴 High Priority (Urgent)'
-  return '🔵 Medium Priority (Timely)'
+export function getCodeReviewPriority(priority: CodeReviewInputParameters['priority'], short = false) {
+  if (priority === 'low') return short ? '⚪️' : '⚪️ Low Priority (Not Urgent)'
+  if (priority === 'medium') return short ? '🔵' : '🔵 Medium Priority (Timely)'
+  if (priority === 'high') return short ? '🔴' : '🔴 High Priority (Urgent)'
+  return short ? '🔵' : '🔵 Medium Priority (Timely)'
 }
 
 export function getCodeReviewState(event_payload: EventPayload): State {
@@ -99,33 +84,26 @@ export function getCodeReviewIcon(state: State, mark = '') {
 }
 
 function getLogs(event_payload: EventPayload) {
-  const text = [`_Authored By: *<@${event_payload.author}>*_`]
-
+  const text = []
   if (event_payload.claimer) {
-    text.push(`_Claimed By: *<@${event_payload.claimer}>*_`)
+    text.push(`_👀 by *<@${event_payload.claimer}>*_`)
   }
 
   if (event_payload.marker) {
-    text.push(`_Marked as '${event_payload.mark}' By: *<@${event_payload.marker}>*_`)
+    text.push(
+      `_${getCodeReviewIcon(getCodeReviewState(event_payload), event_payload.mark)} by *<@${event_payload.marker}>*_`
+    )
   }
 
   if (event_payload.approver) {
-    text.push(`_Approved By: *<@${event_payload.approver}>*_`)
+    text.push(`_${getCodeReviewIcon(getCodeReviewState(event_payload))} by *<@${event_payload.approver}>*_`)
   }
 
   if (event_payload.decliner) {
-    text.push(`_Declined By: *<@${event_payload.decliner}>*_`)
+    text.push(`_${getCodeReviewIcon(getCodeReviewState(event_payload))} by *<@${event_payload.decliner}>*_`)
   }
 
-  return [
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: text.join('\n')
-      }
-    }
-  ]
+  return text.length ? '\n' + text.join(', ') : ''
 }
 
 function getButtons(state: State, complete: boolean) {
@@ -156,15 +134,39 @@ function getButtons(state: State, complete: boolean) {
   }
 
   if (state === 'marked') {
-    return [createButton({ title: 'Remove Mark', action_id: 'unmark' }), ...baseButtons]
+    return [
+      createButton({ title: 'Remove Mark', action_id: 'unmark' }),
+      createButton({
+        title: 'Complete',
+        action_id: 'complete',
+        style: 'primary'
+      }),
+      ...baseButtons
+    ]
   }
 
   if (state === 'approved') {
-    return [createButton({ title: 'Re-Open', action_id: 'unapprove' }), ...baseButtons]
+    return [
+      createButton({ title: 'Re-Open', action_id: 'unapprove' }),
+      createButton({
+        title: 'Complete',
+        action_id: 'complete',
+        style: 'primary'
+      }),
+      ...baseButtons
+    ]
   }
 
   if (state === 'declined') {
-    return [createButton({ title: 'Re-Open', action_id: 'undecline' }), ...baseButtons]
+    return [
+      createButton({ title: 'Re-Open', action_id: 'undecline' }),
+      createButton({
+        title: 'Complete',
+        action_id: 'complete',
+        style: 'primary'
+      }),
+      ...baseButtons
+    ]
   }
 
   return baseButtons
@@ -187,13 +189,13 @@ function createOverflow() {
   return {
     type: 'overflow',
     options: [
-      {
-        text: {
-          type: 'plain_text',
-          text: 'Toggle Notifications'
-        },
-        value: 'notify'
-      },
+      // {
+      //   text: {
+      //     type: 'plain_text',
+      //     text: 'Toggle Notifications'
+      //   },
+      //   value: 'notify'
+      // },
       {
         text: {
           type: 'plain_text',

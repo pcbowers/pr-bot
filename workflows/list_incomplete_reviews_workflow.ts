@@ -26,3 +26,5 @@ ListIncompleteReviewsWorkflow.addStep(ListIncompleteReviewsFunction, {
   channel_id: ListIncompleteReviewsWorkflow.inputs.channel_id,
   user_id: ListIncompleteReviewsWorkflow.inputs.user_id
 })
+
+export default ListIncompleteReviewsWorkflow

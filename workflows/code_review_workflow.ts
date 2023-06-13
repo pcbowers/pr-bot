@@ -80,3 +80,5 @@ CodeReviewWorkflow.addStep(CodeReviewFunction, {
   pr_url: prForm.outputs.fields.pr_url,
   pr_description: prForm.outputs.fields.pr_description
 })
+
+export default CodeReviewWorkflow

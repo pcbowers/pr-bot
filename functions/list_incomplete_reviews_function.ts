@@ -29,5 +29,13 @@ export const ListIncompleteReviewsFunction = DefineFunction({
 })
 
 export default SlackFunction(ListIncompleteReviewsFunction, async ({ inputs, client }) => {
-  return { outputs: await listIncompleteReviews(client, inputs.user_id, inputs.channel_id) }
+  await listIncompleteReviews(client, inputs.user_id, inputs.channel_id)
+  return { completed: false }
 })
+// .addBlockActionsHandler(['refresh_incomplete_reviews'], async ({ body, client, inputs }) => {
+//   await listIncompleteReviews(client, body.user.id, inputs.channel_id)
+//   return { completed: false }
+// })
+// .addBlockActionsHandler(['delete_incomplete_reviews'], async ({ body, client, inputs }) => {
+//   // TODO: Delete list of incomplete reviews
+// })

@@ -19,7 +19,12 @@ interface HistoryMessage {
   [key: string]: unknown
 }
 
-export async function listIncompleteReviews(client: SlackAPIClient, userId: string, channelId: string) {
+export async function listIncompleteReviews(
+  client: SlackAPIClient,
+  userId: string,
+  channelId: string,
+  sendMessage = true
+) {
   const channelName = await getChannelName(client, channelId)
   const timestamp = await getOldestReview(client, channelId)
   const allBotMessages = await getCodeReviews(client, channelId, timestamp)
@@ -36,6 +41,8 @@ export async function listIncompleteReviews(client: SlackAPIClient, userId: stri
       reviews: incompleteReviews.map((botMessage) => botMessage.ts)
     }
   }
+
+  if (!sendMessage) return metadata.event_payload
 
   const postIncompleteReviews = await client.chat.postEphemeral({
     channel: channelId,
@@ -63,6 +70,31 @@ export async function listIncompleteReviews(client: SlackAPIClient, userId: stri
       ...(incompleteReviews.length === 0
         ? [{ type: 'section', text: { type: 'plain_text', text: 'Look at you go! :thumbsup:' } }]
         : [])
+      // ,{
+      //   type: 'actions',
+      //   elements: [
+      //     {
+      //       type: 'button',
+      //       text: {
+      //         type: 'plain_text',
+      //         text: 'Refresh List',
+      //         emoji: true
+      //       },
+      //       style: 'primary',
+      //       action_id: 'refresh_incomplete_reviews'
+      //     },
+      //     {
+      //       type: 'button',
+      //       text: {
+      //         type: 'plain_text',
+      //         text: 'Delete List',
+      //         emoji: true
+      //       },
+      //       style: 'danger',
+      //       action_id: 'delete_incomplete_reviews'
+      //     }
+      //   ]
+      // }
     ],
     text: `There ${incompleteReviews.length === 1 ? 'is' : 'are'} currently ${
       incompleteReviews.length
@@ -79,6 +111,12 @@ export async function listIncompleteReviews(client: SlackAPIClient, userId: stri
 }
 
 function createReviewMessageBlock(botMessage: HistoryMessage) {
+  const date = new Date(Number(botMessage.ts) * 1000).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit'
+  })
+
   return {
     type: 'section',
     text: {
@@ -86,11 +124,9 @@ function createReviewMessageBlock(botMessage: HistoryMessage) {
       text: `${getCodeReviewIcon(
         getCodeReviewState(botMessage.metadata.event_payload),
         botMessage.metadata.event_payload.mark
-      )} <${botMessage.metadata.event_payload.pr_url}|Pull Request> Requested by *<@${
-        botMessage.metadata.event_payload.author
-      }>* for <${ISSUE_URL_PREFIX}${botMessage.metadata.event_payload.issue_id}|${
-        botMessage.metadata.event_payload?.issue_id
-      }>`
+      )} ${date}: <${botMessage.metadata.event_payload.pr_url}|PR> for <${ISSUE_URL_PREFIX}${
+        botMessage.metadata.event_payload.issue_id
+      }|${botMessage.metadata.event_payload?.issue_id}> by *<@${botMessage.metadata.event_payload.author}>*`
     },
     accessory: {
       type: 'button',
@@ -99,7 +135,6 @@ function createReviewMessageBlock(botMessage: HistoryMessage) {
         text: 'View Code Review',
         emoji: true
       },
-      value: 'click_me_123',
       url: botMessage.permalink,
       action_id: 'view_code_review_thread'
     }

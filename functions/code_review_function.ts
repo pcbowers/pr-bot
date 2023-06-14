@@ -61,7 +61,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
     blocks: createCodeReviewMessage(metadata.event_payload, false),
     unfurl_links: false,
     unfurl_media: false,
-    username: 'Pull Request',
+    username: `Pull Request for ${inputs.issue_id}`,
     icon_url: 'https://raw.githubusercontent.com/pcbowers/pr-bot/main/assets/icon.png',
     text: 'A new Pull Request is ready for Code Review!',
     metadata: metadata
@@ -151,6 +151,13 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
       }
     }
   )
+  // .addBlockActionsHandler(['refresh_incomplete_reviews'], async ({ body, client, inputs }) => {
+  //   await listIncompleteReviews(client, body.user.id, inputs.channel_id)
+  //   return { completed: false }
+  // })
+  // .addBlockActionsHandler(['delete_incomplete_reviews'], async ({ body, client, inputs }) => {
+  //   // TODO: Implement Deletion of Incomplete Reviews
+  // })
   .addViewSubmissionHandler('delete_modal', async ({ body, client }) => {
     const private_metadata = JSON.parse(body.view.private_metadata || '{}') as ReturnType<
       typeof createCodeReviewMetadata

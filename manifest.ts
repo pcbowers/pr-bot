@@ -27,7 +27,6 @@ export default Manifest({
     'chat:write',
     'chat:write.public',
     'chat:write.customize',
-    'reactions:read',
     'groups:history',
     'groups:read',
     'datastore:read',

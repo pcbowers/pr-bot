@@ -1,7 +1,7 @@
 import { WorkflowStepInputs } from 'deno-slack-sdk/workflows/types.ts'
 import { CodeReviewFunction } from '../code_review_function.ts'
 import { createCodeReviewMetadata } from './review_metadata.ts'
-
+import { ISSUE_URL_PREFIX } from './constants.ts'
 type EventPayload = Partial<ReturnType<typeof createCodeReviewMetadata>['event_payload']>
 
 type CodeReviewInputParameters = WorkflowStepInputs<
@@ -16,8 +16,6 @@ interface ButtonData {
 }
 
 type State = 'authored' | 'claimed' | 'marked' | 'approved' | 'declined'
-
-export const ISSUE_URL_PREFIX = 'https://jira.os.liberty.edu/browse/'
 
 export function createCodeReviewMessage(event_payload: EventPayload, complete: boolean) {
   const state = getCodeReviewState(event_payload)
@@ -189,13 +187,6 @@ function createOverflow() {
   return {
     type: 'overflow',
     options: [
-      // {
-      //   text: {
-      //     type: 'plain_text',
-      //     text: 'Toggle Notifications'
-      //   },
-      //   value: 'notify'
-      // },
       {
         text: {
           type: 'plain_text',

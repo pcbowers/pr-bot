@@ -3,10 +3,10 @@ import { CodeReviewEvent } from '../event_types/code_review_event.ts'
 import { codeReviewConfirmModal } from './helpers/confirmation_modal.ts'
 import { listIncompleteReviews } from './helpers/incomplete_message.ts'
 import { codeReviewEditModal } from './helpers/review_edit.ts'
+import { codeReviewMarkModal } from './helpers/review_mark.ts'
 import { createCodeReviewMessage } from './helpers/review_message.ts'
 import { createCodeReviewMetadata } from './helpers/review_metadata.ts'
-import { codeReviewNotification } from './helpers/review_notification.ts'
-import { codeReviewMarkModal } from './helpers/review_mark.ts'
+import { codeReviewNotification, userToNotify } from './helpers/review_notification.ts'
 
 export const CodeReviewFunction = DefineFunction({
   callback_id: 'code_review_function',
@@ -37,8 +37,7 @@ export const CodeReviewFunction = DefineFunction({
       priority: { type: Schema.types.string },
       issue_id: { type: Schema.types.string },
       pr_url: { type: Schema.types.string },
-      pr_description: { type: Schema.types.string },
-      subscribed: { type: Schema.types.array, items: { type: Schema.slack.types.user_id }, default: [] }
+      pr_description: { type: Schema.types.string }
     },
     required: ['type', 'author', 'channel_id', 'priority', 'issue_id', 'pr_url']
   }
@@ -53,8 +52,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
       priority: inputs.priority,
       issue_id: inputs.issue_id,
       pr_url: inputs.pr_url,
-      pr_description: inputs.pr_description,
-      subscribed: []
+      pr_description: inputs.pr_description
     }
   }
 
@@ -97,6 +95,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
           client,
           body.container.channel_id,
           body.container.message_ts,
+          userToNotify(body, inputs, action.action_id),
           body.user.id,
           action.action_id,
           metadata.event_payload
@@ -140,37 +139,6 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
           trigger_id: body.interactivity.interactivity_pointer,
           view: codeReviewMarkModal(metadata)
         })
-      } else if (action.action_id === 'notify' || action?.selected_option?.value === 'notify') {
-        let action: string
-        if (metadata.event_payload.subscribed.includes(body.user.id)) {
-          action = 'unsubscribe'
-          metadata.event_payload.subscribed = metadata.event_payload.subscribed.filter(
-            (id: string) => id !== body.user.id
-          )
-        } else {
-          action = 'subscribe'
-          metadata.event_payload.subscribed = [...new Set([...metadata.event_payload.subscribed, body.user.id])]
-        }
-
-        const msgResponse = await client.chat.update({
-          channel: body.container.channel_id,
-          ts: body.container.message_ts,
-          blocks: createCodeReviewMessage(metadata.event_payload, false),
-          metadata: metadata
-        })
-
-        if (!msgResponse.ok) {
-          console.log('Error during request chat.update!', msgResponse)
-        }
-
-        codeReviewNotification(
-          client,
-          body.container.channel_id,
-          body.container.message_ts,
-          body.user.id,
-          action,
-          metadata.event_payload
-        )
       } else if (
         action.action_id === 'list_incomplete_reviews' ||
         action?.selected_option?.value === 'list_incomplete_reviews'
@@ -226,7 +194,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
       })
     }
   })
-  .addViewSubmissionHandler('mark_modal', async ({ body, client }) => {
+  .addViewSubmissionHandler('mark_modal', async ({ body, client, inputs }) => {
     const private_metadata = JSON.parse(body.view.private_metadata || '{}') as ReturnType<
       typeof createCodeReviewMetadata
     >['event_payload']
@@ -253,12 +221,13 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
       client,
       private_metadata.channel_id,
       private_metadata.message_ts,
+      userToNotify(body, inputs),
       body.user.id,
       'mark',
       metadata.event_payload
     )
   })
-  .addViewSubmissionHandler('edit_modal', async ({ body, client }) => {
+  .addViewSubmissionHandler('edit_modal', async ({ body, client, inputs }) => {
     const private_metadata = JSON.parse(body.view.private_metadata || '{}') as ReturnType<
       typeof createCodeReviewMetadata
     >['event_payload']
@@ -288,6 +257,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
       client,
       private_metadata.channel_id,
       private_metadata.message_ts,
+      userToNotify(body, inputs),
       body.user.id,
       'edit',
       metadata.event_payload

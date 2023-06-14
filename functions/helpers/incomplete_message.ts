@@ -2,7 +2,8 @@ import { SlackAPIClient } from 'deno-slack-api/types.ts'
 import { BlockElement } from 'deno-slack-sdk/functions/interactivity/block_kit_types.ts'
 import { OldestCodeReviewDatastore } from '../../datastores/oldest_code_review_datastore.ts'
 import { ListIncompleteReviewsEvent } from '../../event_types/list_incomplete_reviews_event.ts'
-import { ISSUE_URL_PREFIX, getCodeReviewIcon, getCodeReviewState } from './review_message.ts'
+import { ISSUE_URL_PREFIX } from './constants.ts'
+import { getCodeReviewIcon, getCodeReviewState } from './review_message.ts'
 import { createCodeReviewMetadata } from './review_metadata.ts'
 
 interface HistoryMessage {

@@ -34,7 +34,10 @@ export default SlackFunction(ListUnapprovedReviewsFunction, async ({ inputs, cli
   //   client,
   //   inputs.user_id,
   //   inputs.channel_id,
-  //   (botMessage) => !botMessage.metadata?.event_payload?.approver,
+  //   (botMessage) =>
+  //     botMessage?.blocks?.some((block: BlockElement) => block?.type === 'actions') &&
+  //     !botMessage.metadata?.event_payload?.approver &&
+  //     !botMessage.metadata?.event_payload?.decliner,
   //   'Unapproved'
   // )
   // return { completed: false }
@@ -46,8 +49,7 @@ export default SlackFunction(ListUnapprovedReviewsFunction, async ({ inputs, cli
       (botMessage) =>
         botMessage?.blocks?.some((block: BlockElement) => block?.type === 'actions') &&
         !botMessage.metadata?.event_payload?.approver &&
-        !botMessage.metadata?.event_payload?.decliner &&
-        !botMessage.metadata?.event_payload?.marker,
+        !botMessage.metadata?.event_payload?.decliner,
       'Unapproved'
     )
   }

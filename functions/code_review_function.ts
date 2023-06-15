@@ -1,7 +1,6 @@
 import { DefineFunction, Schema, SlackFunction } from 'deno-slack-sdk/mod.ts'
 import { CodeReviewEvent } from '../event_types/code_review_event.ts'
 import { codeReviewConfirmModal } from './helpers/confirmation_modal.ts'
-import { listIncompleteReviews } from './helpers/incomplete_message.ts'
 import { codeReviewEditModal } from './helpers/review_edit.ts'
 import { codeReviewMarkModal } from './helpers/review_mark.ts'
 import { createCodeReviewMessage } from './helpers/review_message.ts'
@@ -63,7 +62,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
     unfurl_media: false,
     username: `Pull Request for ${inputs.issue_id}`,
     icon_url: 'https://raw.githubusercontent.com/pcbowers/pr-bot/main/assets/icon.png',
-    text: 'A new Pull Request is ready for Code Review!',
+    text: `A new Pull Request for ${inputs.issue_id} is ready for Code Review!`,
     metadata: metadata
   })
 
@@ -106,7 +105,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
     }
   )
   .addBlockActionsHandler(
-    ['overflow', 'complete', 'delete', 'edit', 'mark', 'list_incomplete_reviews'],
+    ['overflow', 'complete', 'delete', 'edit', 'mark'],
     async ({ action, body, client, inputs }) => {
       const metadata = createCodeReviewMetadata(action, body, inputs)
       let viewResponse: Awaited<ReturnType<typeof client.views.open>> | undefined = undefined
@@ -139,11 +138,6 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
           trigger_id: body.interactivity.interactivity_pointer,
           view: codeReviewMarkModal(metadata)
         })
-      } else if (
-        action.action_id === 'list_incomplete_reviews' ||
-        action?.selected_option?.value === 'list_incomplete_reviews'
-      ) {
-        await listIncompleteReviews(client, body.user.id, metadata.event_payload.channel_id)
       }
 
       if (viewResponse && !viewResponse.ok) {
@@ -151,13 +145,6 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
       }
     }
   )
-  // .addBlockActionsHandler(['refresh_incomplete_reviews'], async ({ body, client, inputs }) => {
-  //   await listIncompleteReviews(client, body.user.id, inputs.channel_id)
-  //   return { completed: false }
-  // })
-  // .addBlockActionsHandler(['delete_incomplete_reviews'], async ({ body, client, inputs }) => {
-  //   // TODO: Implement Deletion of Incomplete Reviews
-  // })
   .addViewSubmissionHandler('delete_modal', async ({ body, client }) => {
     const private_metadata = JSON.parse(body.view.private_metadata || '{}') as ReturnType<
       typeof createCodeReviewMetadata

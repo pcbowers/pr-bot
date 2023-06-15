@@ -19,20 +19,18 @@ interface HistoryMessage {
   [key: string]: unknown
 }
 
-export async function listIncompleteReviews(
+export async function listReviews(
   client: SlackAPIClient,
   userId: string,
   channelId: string,
-  sendMessage = true
+  filter = (botMessage: HistoryMessage) => botMessage?.blocks?.some((block: BlockElement) => block?.type === 'actions'),
+  codeReviewAdjective = 'incomplete'
 ) {
+  codeReviewAdjective = titleCase(codeReviewAdjective)
   const channelName = await getChannelName(client, channelId)
   const timestamp = await getOldestReview(client, channelId)
   const allBotMessages = await getCodeReviews(client, channelId, timestamp)
-  const incompleteReviews = await addPermaLinks(
-    client,
-    channelId,
-    allBotMessages.filter((botMessage) => botMessage?.blocks?.some((block: BlockElement) => block?.type === 'actions'))
-  )
+  const incompleteReviews = await addPermaLinks(client, channelId, allBotMessages.filter(filter))
 
   const metadata = {
     event_type: ListIncompleteReviewsEvent,
@@ -42,27 +40,20 @@ export async function listIncompleteReviews(
     }
   }
 
-  if (!sendMessage) return metadata.event_payload
-
-  const postIncompleteReviews = await client.chat.postEphemeral({
+  const postReviews = await client.chat.postEphemeral({
     channel: channelId,
     user: userId,
-    username: 'Incomplete Reviews',
+    username: `${codeReviewAdjective} PR Reviews`,
     icon_url: 'https://raw.githubusercontent.com/pcbowers/pr-bot/main/assets/icon.png',
     blocks: [
-      {
-        type: 'header',
-        text: {
-          type: 'plain_text',
-          text: `${incompleteReviews.length} Incomplete PR Code Review${incompleteReviews.length === 1 ? '' : 's'}`
-        }
-      },
       {
         type: 'context',
         elements: [
           {
             type: 'mrkdwn',
-            text: `This includes all the incomplete PR Code Reviews from <#${channelId}>.`
+            text: `There ${incompleteReviews.length === 1 ? 'is' : 'are'} Currently ${
+              incompleteReviews.length
+            } ${codeReviewAdjective} PR Code Review${incompleteReviews.length === 1 ? '' : 's'} in <#${channelId}>.`
           }
         ]
       },
@@ -96,18 +87,26 @@ export async function listIncompleteReviews(
       //   ]
       // }
     ],
-    text: `There ${incompleteReviews.length === 1 ? 'is' : 'are'} currently ${
+    text: `There ${incompleteReviews.length === 1 ? 'is' : 'are'} Currently ${
       incompleteReviews.length
-    } Incomplete PR Code Review${incompleteReviews.length === 1 ? '' : 's'}${
+    } ${codeReviewAdjective} PR Code Review${incompleteReviews.length === 1 ? '' : 's'}${
       channelName ? ` in \`#${channelName}\`` : ''
     }`
   })
 
-  if (!postIncompleteReviews.ok) {
-    console.log('Error during request chat.postMessage!', postIncompleteReviews)
+  if (!postReviews.ok) {
+    console.log('Error during request chat.postMessage!', postReviews)
   }
 
   return metadata.event_payload
+}
+
+function titleCase(str: string) {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map((word) => word.replace(word[0], word[0].toUpperCase()))
+    .join(' ')
 }
 
 function createReviewMessageBlock(botMessage: HistoryMessage) {

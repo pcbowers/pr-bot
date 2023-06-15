@@ -190,13 +190,6 @@ function createOverflow() {
       {
         text: {
           type: 'plain_text',
-          text: 'List Incomplete Reviews'
-        },
-        value: 'list_incomplete_reviews'
-      },
-      {
-        text: {
-          type: 'plain_text',
           text: 'Edit PR Review'
         },
         value: 'edit'

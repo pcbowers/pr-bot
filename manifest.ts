@@ -5,6 +5,8 @@ import { CodeReviewFunction } from './functions/code_review_function.ts'
 import { CodeReviewWorkflow } from './workflows/code_review_workflow.ts'
 import { ListIncompleteReviewsFunction } from './functions/list_incomplete_reviews_function.ts'
 import { ListIncompleteReviewsWorkflow } from './workflows/list_incomplete_reviews_workflow.ts'
+import { ListUnapprovedReviewsFunction } from './functions/list_unapproved_reviews_function.ts'
+import { ListUnapprovedReviewsWorkflow } from './workflows/list_unapproved_reviews_workflow.ts'
 
 /**
  * The app manifest contains the app's configuration. This
@@ -17,8 +19,8 @@ export default Manifest({
   displayName: 'PR Bot',
   icon: 'assets/logo.png',
   backgroundColor: '#235784',
-  functions: [CodeReviewFunction, ListIncompleteReviewsFunction],
-  workflows: [CodeReviewWorkflow, ListIncompleteReviewsWorkflow],
+  functions: [CodeReviewFunction, ListIncompleteReviewsFunction, ListUnapprovedReviewsFunction],
+  workflows: [CodeReviewWorkflow, ListIncompleteReviewsWorkflow, ListUnapprovedReviewsWorkflow],
   events: [CodeReviewEvent],
   datastores: [OldestCodeReviewDatastore],
   outgoingDomains: [],

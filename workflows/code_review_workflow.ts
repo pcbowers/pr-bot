@@ -15,7 +15,7 @@ export const CodeReviewWorkflow = DefineWorkflow({
         type: Schema.slack.types.channel_id
       }
     },
-    required: ['interactivity']
+    required: ['interactivity', 'channel_id']
   }
 })
 

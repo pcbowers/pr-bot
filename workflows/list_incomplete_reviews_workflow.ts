@@ -17,7 +17,7 @@ export const ListIncompleteReviewsWorkflow = DefineWorkflow({
         type: Schema.slack.types.user_id
       }
     },
-    required: ['interactivity']
+    required: ['interactivity', 'channel_id', 'user_id']
   }
 })
 

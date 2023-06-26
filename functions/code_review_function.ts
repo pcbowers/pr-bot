@@ -60,9 +60,9 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
     blocks: createCodeReviewMessage(metadata.event_payload, false),
     unfurl_links: false,
     unfurl_media: false,
-    username: `Pull Request for ${inputs.issue_id}`,
+    username: `Pull Request for ${inputs.issue_id?.split('|')[0]}`,
     icon_url: 'https://raw.githubusercontent.com/pcbowers/pr-bot/main/assets/icon.png',
-    text: `A new Pull Request for ${inputs.issue_id} is ready for Code Review!`,
+    text: `A new Pull Request for ${inputs.issue_id?.split('|')[0]} is ready for Code Review!`,
     metadata: metadata
   })
 

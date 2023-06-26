@@ -80,39 +80,44 @@ function getIcon(action_id: string, mark = '') {
 }
 
 function getNotificationMessage(action_id: string, event_payload: EventPayload, currentUserId: string) {
+  const pullRequest = `<${event_payload.pr_url}|Pull Request>`
+  const issue = `<${ISSUE_URL_PREFIX}${event_payload.issue_id?.split('|')[0]}|${event_payload.issue_id?.split('|')[0]}${
+    event_payload.issue_id?.split('|').length > 1 ? ` (${event_payload.issue_id?.split('|').slice(1).join('|')})` : ''
+  }>`
+
   if (action_id === 'unapprove') {
-    return `<@${currentUserId}> Re-Opened (Unapproved) the <${event_payload.pr_url}|Pull Request> for <${ISSUE_URL_PREFIX}${event_payload.issue_id}|${event_payload.issue_id}>.`
+    return `<@${currentUserId}> Re-Opened (Unapproved) the ${pullRequest} for ${issue}.`
   }
 
   if (action_id === 'approve') {
-    return `<@${currentUserId}> Approved the <${event_payload.pr_url}|Pull Request> for <${ISSUE_URL_PREFIX}${event_payload.issue_id}|${event_payload.issue_id}>.`
+    return `<@${currentUserId}> Approved the ${pullRequest} for ${issue}.`
   }
 
   if (action_id === 'undecline') {
-    return `<@${currentUserId}> Re-Opened (Un-Declined) the <${event_payload.pr_url}|Pull Request> for <${ISSUE_URL_PREFIX}${event_payload.issue_id}|${event_payload.issue_id}>.`
+    return `<@${currentUserId}> Re-Opened (Un-Declined) the ${pullRequest} for ${issue}.`
   }
 
   if (action_id === 'decline') {
-    return `<@${currentUserId}> Declined the <${event_payload.pr_url}|Pull Request> for <${ISSUE_URL_PREFIX}${event_payload.issue_id}|${event_payload.issue_id}>`
+    return `<@${currentUserId}> Declined the ${pullRequest} for ${issue}`
   }
 
   if (action_id === 'claim') {
-    return `<@${currentUserId}> Claimed the <${event_payload.pr_url}|Pull Request> for <${ISSUE_URL_PREFIX}${event_payload.issue_id}|${event_payload.issue_id}>`
+    return `<@${currentUserId}> Claimed the ${pullRequest} for ${issue}`
   }
 
   if (action_id === 'unclaim') {
-    return `<@${currentUserId}> Unclaimed the <${event_payload.pr_url}|Pull Request> for <${ISSUE_URL_PREFIX}${event_payload.issue_id}|${event_payload.issue_id}>`
+    return `<@${currentUserId}> Unclaimed the ${pullRequest} for ${issue}`
   }
 
   if (action_id === 'mark') {
-    return `<@${currentUserId}> Marked the <${event_payload.pr_url}|Pull Request> as '${event_payload.mark}' for <${ISSUE_URL_PREFIX}${event_payload.issue_id}|${event_payload.issue_id}>`
+    return `<@${currentUserId}> Marked the ${pullRequest} as '${event_payload.mark}' for ${issue}`
   }
 
   if (action_id === 'unmark') {
-    return `<@${currentUserId}> Unmarked the <${event_payload.pr_url}|Pull Request> for <${ISSUE_URL_PREFIX}${event_payload.issue_id}|${event_payload.issue_id}>`
+    return `<@${currentUserId}> Unmarked the ${pullRequest} for ${issue}`
   }
 
   if (action_id === 'edit') {
-    return `<@${currentUserId}> Edited the <${event_payload.pr_url}|Pull Request> Review for <${ISSUE_URL_PREFIX}${event_payload.issue_id}|${event_payload.issue_id}>`
+    return `<@${currentUserId}> Edited the ${pullRequest} Review for ${issue}`
   }
 }

@@ -50,7 +50,8 @@ const prForm = CodeReviewWorkflow.addStep(Schema.slack.functions.OpenForm, {
       {
         name: 'issue_id',
         title: 'Issue ID',
-        description: 'The ID of the Issue (i.e. CCS-2425)',
+        description:
+          'The ID of the Issue (i.e. CCS-2425). You can add a category name to the ID by adding a pipe and then your category name (i.e. CCS-2425|Config).',
         type: Schema.types.string
       },
       {

@@ -29,7 +29,13 @@ export function createCodeReviewMessage(event_payload: EventPayload, complete: b
       elements: [
         {
           type: 'mrkdwn',
-          text: `${priority} <${event_payload.pr_url}|See Pull Request> for <${ISSUE_URL_PREFIX}${event_payload.issue_id}|${event_payload.issue_id}> by <@${event_payload.author}>${logs}`
+          text: `${priority} <${event_payload.pr_url}|See Pull Request> for <${ISSUE_URL_PREFIX}${
+            event_payload.issue_id?.split('|')[0]
+          }|${event_payload.issue_id?.split('|')[0]}${
+            event_payload.issue_id?.split('|').length > 1
+              ? ` (${event_payload.issue_id?.split('|').slice(1).join('|')})`
+              : ''
+          }> by <@${event_payload.author}>${logs}`
         }
       ]
     },

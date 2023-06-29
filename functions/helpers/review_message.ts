@@ -35,7 +35,7 @@ export function createCodeReviewMessage(event_payload: EventPayload, complete: b
             event_payload.issue_id?.split('|').length > 1
               ? ` (${event_payload.issue_id?.split('|').slice(1).join('|')})`
               : ''
-          }> by <@${event_payload.author}>${logs}`
+          }>${logs}`
         }
       ]
     },

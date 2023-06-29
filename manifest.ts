@@ -32,7 +32,8 @@ export default Manifest({
     'groups:history',
     'groups:read',
     'datastore:read',
-    'datastore:write'
+    'datastore:write',
+    'users:read'
   ],
   features: {
     appHome: {

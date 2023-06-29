@@ -55,14 +55,23 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
     }
   }
 
+  const userInfo = await client.users.info({ user: inputs.interactivity.interactor.id })
+
+  if (!userInfo.ok) {
+    console.log('Error during request users.info!', userInfo)
+    return { completed: false }
+  }
+
+  const username = userInfo.user.profile.display_name || userInfo.user.real_name || userInfo.user.name
+
   const msgResponse = await client.chat.postMessage({
     channel: inputs.channel_id,
     blocks: createCodeReviewMessage(metadata.event_payload, false),
     unfurl_links: false,
     unfurl_media: false,
-    username: `Pull Request for ${inputs.issue_id?.split('|')[0]}`,
-    icon_url: 'https://raw.githubusercontent.com/pcbowers/pr-bot/main/assets/icon.png',
-    text: `A new Pull Request for ${inputs.issue_id?.split('|')[0]} is ready for Code Review!`,
+    username: username,
+    icon_url: userInfo.user.profile.image_512,
+    text: `${username} created a new Pull Request for ${inputs.issue_id?.split('|')[0]} that is ready for Code Review!`,
     metadata: metadata
   })
 

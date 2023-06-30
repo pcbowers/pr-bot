@@ -17,7 +17,7 @@ export async function codeReviewNotification(
   action_id: string,
   event_payload: EventPayload
 ) {
-  // if (userToNotify === responsibleUser) return
+  if (userToNotify === responsibleUser) return
 
   const notificationMessage = getNotificationMessage(action_id, event_payload, responsibleUser)
   if (!notificationMessage) return

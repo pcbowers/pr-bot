@@ -2,8 +2,7 @@ import { SlackAPIClient } from 'deno-slack-api/types.ts'
 import { BlockElement } from 'deno-slack-sdk/functions/interactivity/block_kit_types.ts'
 import { OldestCodeReviewDatastore } from '../../datastores/oldest_code_review_datastore.ts'
 import { ListIncompleteReviewsEvent } from '../../event_types/list_incomplete_reviews_event.ts'
-import { ISSUE_URL_PREFIX } from './constants.ts'
-import { getCodeReviewIcon, getCodeReviewState } from './review_message.ts'
+import { formatPrTitle, getCodeReviewIcon, getCodeReviewState } from './review_message.ts'
 import { createCodeReviewMetadata } from './review_metadata.ts'
 
 interface HistoryMessage {
@@ -123,13 +122,12 @@ function createReviewMessageBlock(botMessage: HistoryMessage) {
       text: `${getCodeReviewIcon(
         getCodeReviewState(botMessage.metadata.event_payload),
         botMessage.metadata.event_payload.mark
-      )} ${date}: <${botMessage.metadata.event_payload.pr_url}|PR> for <${ISSUE_URL_PREFIX}${
-        botMessage.metadata.event_payload.issue_id?.split('|')[0]
-      }|${botMessage.metadata.event_payload.issue_id?.split('|')[0]}${
-        botMessage.metadata.event_payload.issue_id?.split('|').length > 1
-          ? ` (${botMessage.metadata.event_payload.issue_id?.split('|').slice(1).join('|')})`
-          : ''
-      }> by *<@${botMessage.metadata.event_payload.author}>*`
+      )} ${date}: <${botMessage.metadata.event_payload.pr_url}|See Pull Request> by *<@${
+        botMessage.metadata.event_payload.author
+      }>*\n_${formatPrTitle(
+        // @ts-ignore - TODO: Remove fallback
+        botMessage.metadata.event_payload.pr_title ?? botMessage.metadata.event_payload.issue_id ?? ''
+      )}_`
     },
     accessory: {
       type: 'button',

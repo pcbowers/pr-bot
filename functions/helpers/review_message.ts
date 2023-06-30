@@ -1,7 +1,7 @@
 import { WorkflowStepInputs } from 'deno-slack-sdk/workflows/types.ts'
 import { CodeReviewFunction } from '../code_review_function.ts'
 import { createCodeReviewMetadata } from './review_metadata.ts'
-import { ISSUE_URL_PREFIX } from './constants.ts'
+import { ISSUE_ID_REGEX, ISSUE_URL_PREFIX } from './constants.ts'
 type EventPayload = Partial<ReturnType<typeof createCodeReviewMetadata>['event_payload']>
 
 type CodeReviewInputParameters = WorkflowStepInputs<
@@ -29,13 +29,9 @@ export function createCodeReviewMessage(event_payload: EventPayload, complete: b
       elements: [
         {
           type: 'mrkdwn',
-          text: `${priority} <${event_payload.pr_url}|See Pull Request> for <${ISSUE_URL_PREFIX}${
-            event_payload.issue_id?.split('|')[0]
-          }|${event_payload.issue_id?.split('|')[0]}${
-            event_payload.issue_id?.split('|').length > 1
-              ? ` (${event_payload.issue_id?.split('|').slice(1).join('|')})`
-              : ''
-          }>${logs}`
+          text: `${priority} <${event_payload.pr_url}|See Pull Request> | _${formatPrTitle(
+            event_payload.pr_title
+          )}_${logs}`
         }
       ]
     },
@@ -85,6 +81,10 @@ export function getCodeReviewIcon(state: State, mark = '') {
     if (mark === 'Needs Work') return ':construction:'
   }
   return ':tada:'
+}
+
+export function formatPrTitle(prTitle: string): string {
+  return prTitle.replace(ISSUE_ID_REGEX, `<${ISSUE_URL_PREFIX}$1|$1>`).trim()
 }
 
 function getLogs(event_payload: EventPayload) {

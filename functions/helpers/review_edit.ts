@@ -81,15 +81,15 @@ export function codeReviewEditModal(metadata: ReturnType<typeof createCodeReview
       },
       {
         type: 'input',
-        block_id: 'issue_id_section',
+        block_id: 'pr_title_section',
         element: {
           type: 'plain_text_input',
-          action_id: 'issue_id',
-          initial_value: metadata.event_payload.issue_id
+          action_id: 'pr_title',
+          initial_value: metadata.event_payload.pr_title
         },
         label: {
           type: 'plain_text',
-          text: 'Issue ID',
+          text: 'Pull Request Title',
           emoji: true
         }
       },
@@ -98,7 +98,7 @@ export function codeReviewEditModal(metadata: ReturnType<typeof createCodeReview
         elements: [
           {
             type: 'plain_text',
-            text: 'The ID of the Issue (i.e. CCS-2425). You can add a category name to the ID by adding a pipe and then your category name (i.e. CCS-2425|Config).',
+            text: 'The Title of the Pull Request. Issue IDs will automatically be hyperlinked.',
             emoji: true
           }
         ]

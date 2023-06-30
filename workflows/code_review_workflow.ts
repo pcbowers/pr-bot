@@ -48,10 +48,9 @@ const prForm = CodeReviewWorkflow.addStep(Schema.slack.functions.OpenForm, {
         default: 'medium'
       },
       {
-        name: 'issue_id',
-        title: 'Issue ID',
-        description:
-          'The ID of the Issue (i.e. CCS-2425). You can add a category name to the ID by adding a pipe and then your category name (i.e. CCS-2425|Config).',
+        name: 'pr_title',
+        title: 'Pull Request Title',
+        description: 'The Title of the Pull Request. Issue IDs will automatically be hyperlinked.',
         type: Schema.types.string
       },
       {
@@ -69,7 +68,7 @@ const prForm = CodeReviewWorkflow.addStep(Schema.slack.functions.OpenForm, {
         long: true
       }
     ],
-    required: ['issue_id', 'pr_url', 'priority']
+    required: ['pr_title', 'pr_url', 'priority']
   }
 })
 
@@ -77,7 +76,7 @@ CodeReviewWorkflow.addStep(CodeReviewFunction, {
   interactivity: prForm.outputs.interactivity,
   channel_id: CodeReviewWorkflow.inputs.channel_id,
   priority: prForm.outputs.fields.priority,
-  issue_id: prForm.outputs.fields.issue_id,
+  pr_title: prForm.outputs.fields.pr_title,
   pr_url: prForm.outputs.fields.pr_url,
   pr_description: prForm.outputs.fields.pr_description
 })

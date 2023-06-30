@@ -16,11 +16,11 @@ export const CodeReviewFunction = DefineFunction({
       interactivity: { type: Schema.slack.types.interactivity },
       channel_id: { type: Schema.slack.types.channel_id },
       priority: { type: Schema.types.string },
-      issue_id: { type: Schema.types.string },
+      pr_title: { type: Schema.types.string },
       pr_url: { type: Schema.types.string },
       pr_description: { type: Schema.types.string }
     },
-    required: ['interactivity', 'channel_id', 'priority', 'issue_id', 'pr_url']
+    required: ['interactivity', 'channel_id', 'priority', 'pr_title', 'pr_url']
   },
   output_parameters: {
     properties: {
@@ -34,11 +34,11 @@ export const CodeReviewFunction = DefineFunction({
       approver: { type: Schema.slack.types.user_id },
       decliner: { type: Schema.slack.types.user_id },
       priority: { type: Schema.types.string },
-      issue_id: { type: Schema.types.string },
+      pr_title: { type: Schema.types.string },
       pr_url: { type: Schema.types.string },
       pr_description: { type: Schema.types.string }
     },
-    required: ['type', 'author', 'channel_id', 'priority', 'issue_id', 'pr_url']
+    required: ['type', 'author', 'channel_id', 'priority', 'pr_title', 'pr_url']
   }
 })
 
@@ -49,7 +49,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
       channel_id: inputs.channel_id,
       author: inputs.interactivity.interactor.id,
       priority: inputs.priority,
-      issue_id: inputs.issue_id,
+      pr_title: inputs.pr_title,
       pr_url: inputs.pr_url,
       pr_description: inputs.pr_description
     }
@@ -71,7 +71,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
     unfurl_media: false,
     username: username,
     icon_url: userInfo.user.profile.image_512,
-    text: `${username} created a new Pull Request for ${inputs.issue_id?.split('|')[0]} that is ready for Code Review!`,
+    text: `${username} created a new Pull Request for ${inputs.pr_title?.split('|')[0]} that is ready for Code Review!`,
     metadata: metadata
   })
 
@@ -239,7 +239,7 @@ export default SlackFunction(CodeReviewFunction, async ({ inputs, client }) => {
       event_payload: {
         ...private_metadata,
         priority: body.view.state.values.priority_section.priority.selected_option.value,
-        issue_id: body.view.state.values.issue_id_section.issue_id.value,
+        pr_title: body.view.state.values.pr_title_section.pr_title.value,
         pr_url: body.view.state.values.pr_url_section.pr_url.value,
         pr_description: body.view.state.values.pr_description_section.pr_description.value ?? '!undefined!'
       }

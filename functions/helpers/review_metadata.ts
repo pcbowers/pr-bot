@@ -45,7 +45,10 @@ export function createCodeReviewMetadata(
           : body.message?.metadata?.event_payload?.decliner,
       mark: action.action_id === 'unmark' ? undefined : body.message?.metadata?.event_payload?.mark,
       priority: body.message?.metadata?.event_payload?.priority ?? inputs.priority,
-      issue_id: body.message?.metadata?.event_payload?.issue_id ?? inputs.issue_id,
+      pr_title:
+        body.message?.metadata?.event_payload?.pr_title ??
+        body.message?.metadata?.event_payload?.issue_id ?? // TODO: remove this fallback
+        inputs.pr_title,
       pr_url: body.message?.metadata?.event_payload?.pr_url ?? inputs.pr_url,
       pr_description: body.message?.metadata?.event_payload?.pr_description ?? inputs.pr_description
     }

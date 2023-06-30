@@ -3,8 +3,8 @@ import { BlockActionsBody } from 'deno-slack-sdk/functions/interactivity/block_a
 import { ViewSubmissionBody } from 'deno-slack-sdk/functions/interactivity/view_types.ts'
 import { FunctionRuntimeParameters } from 'deno-slack-sdk/functions/types.ts'
 import { CodeReviewFunction } from '../code_review_function.ts'
-import { ISSUE_URL_PREFIX } from './constants.ts'
 import { createCodeReviewMetadata } from './review_metadata.ts'
+import { formatPrTitle } from './review_message.ts'
 
 type EventPayload = Partial<ReturnType<typeof createCodeReviewMetadata>['event_payload']>
 
@@ -17,7 +17,7 @@ export async function codeReviewNotification(
   action_id: string,
   event_payload: EventPayload
 ) {
-  if (userToNotify === responsibleUser) return
+  // if (userToNotify === responsibleUser) return
 
   const notificationMessage = getNotificationMessage(action_id, event_payload, responsibleUser)
   if (!notificationMessage) return
@@ -81,43 +81,41 @@ function getIcon(action_id: string, mark = '') {
 
 function getNotificationMessage(action_id: string, event_payload: EventPayload, currentUserId: string) {
   const pullRequest = `<${event_payload.pr_url}|Pull Request>`
-  const issue = `<${ISSUE_URL_PREFIX}${event_payload.issue_id?.split('|')[0]}|${event_payload.issue_id?.split('|')[0]}${
-    event_payload.issue_id?.split('|').length > 1 ? ` (${event_payload.issue_id?.split('|').slice(1).join('|')})` : ''
-  }>`
+  const title = `_(${formatPrTitle(event_payload.pr_title)})_`
 
   if (action_id === 'unapprove') {
-    return `<@${currentUserId}> Re-Opened (Unapproved) the ${pullRequest} for ${issue}.`
+    return `<@${currentUserId}> Re-Opened (Unapproved) the ${pullRequest} ${title}.`
   }
 
   if (action_id === 'approve') {
-    return `<@${currentUserId}> Approved the ${pullRequest} for ${issue}.`
+    return `<@${currentUserId}> Approved the ${pullRequest} ${title}.`
   }
 
   if (action_id === 'undecline') {
-    return `<@${currentUserId}> Re-Opened (Un-Declined) the ${pullRequest} for ${issue}.`
+    return `<@${currentUserId}> Re-Opened (Un-Declined) the ${pullRequest} ${title}.`
   }
 
   if (action_id === 'decline') {
-    return `<@${currentUserId}> Declined the ${pullRequest} for ${issue}`
+    return `<@${currentUserId}> Declined the ${pullRequest} ${title}`
   }
 
   if (action_id === 'claim') {
-    return `<@${currentUserId}> Claimed the ${pullRequest} for ${issue}`
+    return `<@${currentUserId}> Claimed the ${pullRequest} ${title}`
   }
 
   if (action_id === 'unclaim') {
-    return `<@${currentUserId}> Unclaimed the ${pullRequest} for ${issue}`
+    return `<@${currentUserId}> Unclaimed the ${pullRequest} ${title}`
   }
 
   if (action_id === 'mark') {
-    return `<@${currentUserId}> Marked the ${pullRequest} as '${event_payload.mark}' for ${issue}`
+    return `<@${currentUserId}> Marked the ${pullRequest} as '${event_payload.mark}' ${title}`
   }
 
   if (action_id === 'unmark') {
-    return `<@${currentUserId}> Unmarked the ${pullRequest} for ${issue}`
+    return `<@${currentUserId}> Unmarked the ${pullRequest} ${title}`
   }
 
   if (action_id === 'edit') {
-    return `<@${currentUserId}> Edited the ${pullRequest} Review for ${issue}`
+    return `<@${currentUserId}> Edited the ${pullRequest} Review ${title}`
   }
 }

@@ -14,10 +14,10 @@ export const CodeReviewEvent = DefineEvent({
     approver: { type: Schema.slack.types.user_id },
     decliner: { type: Schema.slack.types.user_id },
     priority: { type: Schema.types.string },
-    issue_id: { type: Schema.types.string },
+    pr_title: { type: Schema.types.string },
     pr_url: { type: Schema.types.string },
     pr_description: { type: Schema.types.string }
   },
-  required: ['author', 'channel_id', 'priority', 'issue_id', 'pr_url'],
+  required: ['author', 'channel_id', 'priority', 'pr_title', 'pr_url'],
   additionalProperties: false
 })
